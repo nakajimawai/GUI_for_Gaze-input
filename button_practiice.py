@@ -21,13 +21,13 @@ frame1 = ttk.Frame(root,padding=10)
 button_forward = ttk.Button(
     frame1,
     text="forward",
-    command=forward()
+    command=forward
 )
 #停止用ボタン
 button_stop =ttk.Button(
     frame1,
     text="stop",
-    command=stop()
+    command=stop
 )
 
 #レイアウト

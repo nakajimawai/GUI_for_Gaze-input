@@ -3,6 +3,7 @@ import socket
 #from tkinter import *
 import tkinter as tk
 from tkinter import ttk
+from PIL import Image, ImageTk
 import cv2
 #Set server ip address, port, buffer capacity
 HOST='192.168.11.26'
@@ -18,24 +19,33 @@ class MyApp(ttk.Frame):
         ttk.Frame.__init__(self, root, width=400, height=400, padding=10)
         self.controller = controller
         #画像読み込み
+
+        #リサイズするため
+        img = Image.open('sample_arrow.png')
+        img = img.resize((200, 100))
+        img = ImageTk.PhotoImage(img)
+        #img = tk.PhotoImage(img)
+        #
+        #tkinterで初めから読み込み
         origin_image = tk.PhotoImage(file='sample_arrow.png')
-        print(origin_image)
         big_img = origin_image.zoom(5,5)
-        small_img = origin_image.subsample(1,1.5)
+        small_img = origin_image.subsample(2,2)
+        resize_img = origin_image
         #前進用ボタン
         button_forward = tk.Button(
             self,
-            text="FORWARD",
+            #text="FORWARD",
             font=("",18),
             fg='red',
-            image=small_img,
+            image=img,
             compound="top",
             width=200,
             height=100,
             command=self.forward
         )
         #self.origin_image = origin_image
-        self.small_img = small_img
+        #self.small_img = small_img
+        self.img = img
         #button_forward.bind("<Button-1>",forward)
         #右旋回用ボタン
         button_right = tk.Button(

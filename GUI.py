@@ -16,14 +16,39 @@ class MyApp(ttk.Frame):
         root.title("GUI_for_gaze input")
         #ウィジェット
         #frame1 = tk.Frame(root)
-        ttk.Frame.__init__(self, root, width=400, height=400, padding=10)
-        self.controller = controller
+        ttk.Frame.__init__(self, root, width=1275, height=765, padding=10)
+        #self.controller = controller
         #画像読み込み
-
+        #背景画像用のキャンバス
+        cvs = tk.Canvas(self,width=1275,height=765)
+        cvs.place(
+            relx=0,
+            rely=0,
+            bordermode=tk.OUTSIDE
+        )
+        bg = Image.open('bg-test.jpg')
+        bg = bg.resize((1275, 765))
+        bg = ImageTk.PhotoImage(bg)
+        cvs.create_image(0,0,anchor='nw',image=bg)
+        self.controller = controller
+        self.bg = bg
         #リサイズするため
-        img = Image.open('sample_arrow.png')
-        img = img.resize((200, 100))
-        img = ImageTk.PhotoImage(img)
+        #前進シンボル
+        img_forward = Image.open('forward.png')
+        img_forward = img_forward.resize((200, 100))
+        img_forward = ImageTk.PhotoImage(img_forward)
+        #停止シンボル
+        img_stop = Image.open('stop.2.png')
+        img_stop = img_stop.resize((195, 195))
+        img_stop = ImageTk.PhotoImage(img_stop)
+        #cw旋回シンボル
+        img_cw = Image.open('cw.png')
+        img_cw = img_cw.resize((125, 125))
+        img_cw = ImageTk.PhotoImage(img_cw)
+        #ccwシンボル
+        img_ccw = Image.open('ccw.png')
+        img_ccw = img_ccw.resize((125, 125))
+        img_ccw = ImageTk.PhotoImage(img_ccw)
         #img = tk.PhotoImage(img)
         #
         #tkinterで初めから読み込み
@@ -31,6 +56,7 @@ class MyApp(ttk.Frame):
         big_img = origin_image.zoom(5,5)
         small_img = origin_image.subsample(2,2)
         resize_img = origin_image
+        '''
         #前進用ボタン
         button_forward = tk.Button(
             self,
@@ -83,6 +109,65 @@ class MyApp(ttk.Frame):
         button_right.pack(side=tk.RIGHT)
         button_left.pack(side=tk.LEFT)#文字とボタン端までの間隔ipadx=50, ipady=50
         #button_forward.bind("Button-1",forward)
+        '''
+        #前進ボタン
+        button_forward = tk.Button(
+            self,
+            image=img_forward,
+            command=self.forward
+        )
+        self.img_forward = img_forward
+        #貼り付け
+        button_forward.place(
+            x = 637,
+            y = 50,
+            anchor=tk.CENTER
+        )
+        #停止ボタン
+        button_stop = tk.Button(
+            self,
+            image=img_stop,
+            command=self.stop
+        )
+        self.img_stop = img_stop
+        #貼り付け
+        button_stop.place(
+            x = 637,
+            y = 655,
+            width=250,
+            height=200,
+            anchor=tk.CENTER
+        )
+        #cw旋回ボタン
+        button_cw = tk.Button(
+            self,
+            image=img_cw,
+            command=self.cw
+        )
+        self.img_cw = img_cw
+        #貼り付け
+        button_cw.place(
+            x = 1185,
+            y = 382,
+            width=150,
+            height=200,
+            anchor=tk.CENTER
+        )
+        #ccw旋回ボタン
+        button_ccw = tk.Button(
+            self,
+            image=img_ccw,
+            command=self.ccw
+        )
+        self.img_ccw = img_ccw
+        #貼り付け
+        button_ccw.place(
+            x = 67,
+            y = 382,
+            width=150,
+            height=200,
+            anchor=tk.CENTER
+        )                
 
     #文字列送信用
     def control(self, data):
@@ -108,11 +193,11 @@ class MyApp(ttk.Frame):
         print("前進")
         self.control("w")
     #ボタンright
-    def right(self):
+    def cw(self):
         print("右旋回")
         self.control("d")
     #ボタンforward
-    def left(self):
+    def ccw(self):
         print("左旋回")
         self.control("a")
     #ボタンstop

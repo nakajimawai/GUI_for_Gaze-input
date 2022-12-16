@@ -3,7 +3,7 @@ import socket
 #from tkinter import *
 import tkinter as tk
 from tkinter import ttk
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageOps
 import cv2
 #Set server ip address, port, buffer capacity
 HOST='192.168.11.26'
@@ -18,21 +18,24 @@ class MyApp(ttk.Frame):
         #frame1 = tk.Frame(root)
         ttk.Frame.__init__(self, root, width=1275, height=765, padding=10)
         #self.controller = controller
-        #画像読み込み
-        #背景画像用のキャンバス
-        cvs = tk.Canvas(self,width=1275,height=765)
-        cvs.place(
+        ###画像読み込み###
+
+        ###背景映像読み込み###
+        self.cap0 = cv2.VideoCapture(0)
+
+
+        ###背景画像用のキャンバス###
+        self.cvs = tk.Canvas(self,width=1275,height=765)
+        self.cvs.place(
             relx=0,
             rely=0,
             bordermode=tk.OUTSIDE
         )
-        bg = Image.open('bg-test.jpg')
-        bg = bg.resize((1275, 765))
-        bg = ImageTk.PhotoImage(bg)
-        cvs.create_image(0,0,anchor='nw',image=bg)
-        self.controller = controller
-        self.bg = bg
-        #リサイズするため
+        #bg = Image.open(video_img)
+        #bg = bg.resize((1275, 765))
+        ######
+
+        ###シンボル作成###
         #前進シンボル
         img_forward = Image.open('forward.png')
         img_forward = img_forward.resize((200, 100))
@@ -49,67 +52,9 @@ class MyApp(ttk.Frame):
         img_ccw = Image.open('ccw.png')
         img_ccw = img_ccw.resize((125, 125))
         img_ccw = ImageTk.PhotoImage(img_ccw)
-        #img = tk.PhotoImage(img)
-        #
-        #tkinterで初めから読み込み
-        origin_image = tk.PhotoImage(file='sample_arrow.png')
-        big_img = origin_image.zoom(5,5)
-        small_img = origin_image.subsample(2,2)
-        resize_img = origin_image
-        '''
-        #前進用ボタン
-        button_forward = tk.Button(
-            self,
-            #text="FORWARD",
-            font=("",18),
-            fg='red',
-            image=img,
-            compound="top",
-            width=200,
-            height=100,
-            command=self.forward
-        )
-        #self.origin_image = origin_image
-        #self.small_img = small_img
-        self.img = img
-        #button_forward.bind("<Button-1>",forward)
-        #右旋回用ボタン
-        button_right = tk.Button(
-            self,
-            text="CW",
-            font=("",18),
-            fg='purple',
-            width=10,
-            height=15,
-            command=self.stop
-        )#左旋回用ボタン
-        button_left = tk.Button(
-            self,
-            text="CCW",
-            font=("",18),
-            fg='green',
-            width=10,
-            height=15,
-            command=self.left
-        )
-        #後進用ボタン
-        button_stop =tk.Button(
-            self,
-            text="BACK",
-            font=("",18),
-            fg='blue',
-            width=30,
-            height=5,
-            command=self.back
-        )
-        #レイアウト
-        self.pack(expand=True, fill=tk.BOTH)
-        button_forward.pack(side=tk.TOP)
-        button_stop.pack(side=tk.BOTTOM)
-        button_right.pack(side=tk.RIGHT)
-        button_left.pack(side=tk.LEFT)#文字とボタン端までの間隔ipadx=50, ipady=50
-        #button_forward.bind("Button-1",forward)
-        '''
+        ######
+
+        ###ボタン設置###
         #前進ボタン
         button_forward = tk.Button(
             self,
@@ -167,7 +112,35 @@ class MyApp(ttk.Frame):
             width=150,
             height=200,
             anchor=tk.CENTER
-        )                
+        )
+        ######
+        '''動画表示''' 
+        self.disp_image()
+
+    def disp_image(self):
+        '''canvasに画像を表示'''
+        #フレーム画像の読み込み
+        ret, frame = self.cap0.read()
+
+        #frame = cv2.resize(frame,(1275.765))
+        #BGR->RGB変換
+        cv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        # NumPyのndarrayからPillowのImageへ変換
+        pil_image = Image.fromarray(cv_image)
+
+        # キャンバスのサイズを取得
+        canvas_width = self.cvs.winfo_width()
+        canvas_height = self.cvs.winfo_height()
+
+        # 画像のアスペクト比（縦横比）を崩さずに指定したサイズ（キャンバスのサイズ）全体に画像をリサイズする
+        #pil_image = ImageOps.pad(pil_image, (canvas_width, canvas_height))
+
+        pil_image = pil_image.resize((1275, 765))
+        #PIL.ImageからPhotoImageへ変換する
+        self.bg = ImageTk.PhotoImage(pil_image)
+        self.cvs.create_image(0,0,anchor='nw',image=self.bg)
+        #画像更新のために10msスレッドを空ける
+        self.after(10, self.disp_image)
 
     #文字列送信用
     def control(self, data):
@@ -210,9 +183,9 @@ class MyApp(ttk.Frame):
         self.control("x")
 
 
-#if __name__ == "__main__":
+if __name__ == "__main__":
 
-root = tk.Tk()
-frame = MyApp(root, object())
-frame.pack()
-root.mainloop()
+    root = tk.Tk()
+    frame = MyApp(root, object())
+    frame.pack()
+    root.mainloop()

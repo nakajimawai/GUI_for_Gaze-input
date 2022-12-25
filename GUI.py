@@ -4,7 +4,7 @@ import socket
 import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk, ImageOps
-import cv2
+import cv2, numpy
 #Set server ip address, port, buffer capacity
 HOST='192.168.11.26'
 PORT=8008
@@ -119,12 +119,25 @@ class MyApp(ttk.Frame):
 
     def disp_image(self):
         '''canvasに画像を表示'''
-        #フレーム画像の読み込み
-        ret, frame = self.cap0.read()
+        HOST = '192.168.143.152'
+        PORT = 8080 
+        sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)  
+        sock.connect((HOST,PORT))   
+        sock.send(('Hello Raspberry').encode("utf-8"))
+        buf = b''
+        recvlen = 100
+        while recvlen > 0:
+            receivedstr =   sock.recv(1024)
+            recvlen = len(receivedstr)
+            buf += receivedstr
+
+        sock.close
+        narray = numpy.fromstring(buf, dtype='uint8')
+        img = cv2.imdecode(narray,1)
 
         #frame = cv2.resize(frame,(1275.765))
         #BGR->RGB変換
-        cv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        cv_image = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         # NumPyのndarrayからPillowのImageへ変換
         pil_image = Image.fromarray(cv_image)
 

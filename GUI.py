@@ -4,13 +4,12 @@ import socket
 import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk, ImageOps
-import cv2, numpy
+import cv2, numpy, time
 #Set server ip address, port, buffer capacity
-HOST='192.168.11.26'
-PORT=8008
-BUFFER=4096
+
 
 class MyApp(ttk.Frame):
+    '''ボタンやキャンバスの設定、表示'''
     def __init__(self, root, controller):
         root.geometry('1275x765')
         root.title("GUI_for_gaze input")
@@ -37,20 +36,20 @@ class MyApp(ttk.Frame):
 
         ###シンボル作成###
         #前進シンボル
-        img_forward = Image.open('forward.png')
+        img_forward = Image.open('forward_3d.png')
         img_forward = img_forward.resize((200, 100))
         img_forward = ImageTk.PhotoImage(img_forward)
         #停止シンボル
-        img_stop = Image.open('stop.2.png')
-        img_stop = img_stop.resize((195, 195))
+        img_stop = Image.open('stop_3d.png')
+        img_stop = img_stop.resize((200, 200))
         img_stop = ImageTk.PhotoImage(img_stop)
         #cw旋回シンボル
-        img_cw = Image.open('cw.png')
-        img_cw = img_cw.resize((125, 125))
+        img_cw = Image.open('cw_3d.png')
+        img_cw = img_cw.resize((150, 200))
         img_cw = ImageTk.PhotoImage(img_cw)
         #ccwシンボル
-        img_ccw = Image.open('ccw.png')
-        img_ccw = img_ccw.resize((125, 125))
+        img_ccw = Image.open('ccw_3d.png')
+        img_ccw = img_ccw.resize((150, 200))
         img_ccw = ImageTk.PhotoImage(img_ccw)
         ######
 
@@ -62,6 +61,7 @@ class MyApp(ttk.Frame):
             command=self.forward
         )
         self.img_forward = img_forward
+        #button_forward['bg'] = root['bg']
         #貼り付け
         button_forward.place(
             x = 637,
@@ -79,7 +79,7 @@ class MyApp(ttk.Frame):
         button_stop.place(
             x = 637,
             y = 655,
-            width=250,
+            width=200,
             height=200,
             anchor=tk.CENTER
         )
@@ -117,12 +117,14 @@ class MyApp(ttk.Frame):
         '''動画表示''' 
         self.disp_image()
 
+    '''1フレーム分のデータを受け取って表示する'''
     def disp_image(self):
         '''canvasに画像を表示'''
         HOST = '192.168.143.152'
         PORT = 8080 
         sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)  
-        sock.connect((HOST,PORT))   
+        sock.connect((HOST,8080))
+        #time_sta = time.perf_counter()   
         sock.send(('Hello Raspberry').encode("utf-8"))
         buf = b''
         recvlen = 100
@@ -132,6 +134,12 @@ class MyApp(ttk.Frame):
             buf += receivedstr
 
         sock.close
+        #time_end = time.perf_counter()
+        #tim = time_end - time_sta
+        #print(tim)
+
+        time_sta = time.perf_counter()
+
         narray = numpy.fromstring(buf, dtype='uint8')
         img = cv2.imdecode(narray,1)
 
@@ -151,12 +159,21 @@ class MyApp(ttk.Frame):
         pil_image = pil_image.resize((1275, 765))
         #PIL.ImageからPhotoImageへ変換する
         self.bg = ImageTk.PhotoImage(pil_image)
+        #画像描画
         self.cvs.create_image(0,0,anchor='nw',image=self.bg)
+
+        time_end = time.perf_counter()
+        tim = time_end - time_sta
+        print(tim)
+
         #画像更新のために10msスレッドを空ける
         self.after(10, self.disp_image)
 
-    #文字列送信用
+    '''文字列送信用'''
     def control(self, data):
+        HOST='192.168.11.26'
+        PORT=8080
+        BUFFER=4096
             # Define socket communication type ipv4, tcp
         soc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
             #connect to the server 
@@ -174,6 +191,7 @@ class MyApp(ttk.Frame):
 
         print(buf)
 
+    '''ボタンごとの文字列を文字列送信用の関数controlに送る'''
     #ボタンforward
     def forward(self):
         print("前進")

@@ -4,13 +4,15 @@ import socket
 import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk, ImageOps
-import cv2, numpy, time
+import cv2, numpy, time, csv
 #Set server ip address, port, buffer capacity
 
 
 class MyApp(ttk.Frame):
+    
     '''ボタンやキャンバスの設定、表示'''
-    def __init__(self, root, controller):
+    def __init__(self, root, controller):  
+
         root.geometry('1275x765')
         root.title("GUI_for_gaze input")
         #ウィジェット
@@ -113,59 +115,85 @@ class MyApp(ttk.Frame):
             height=200,
             anchor=tk.CENTER
         )
+
         ######
         '''動画表示''' 
         self.disp_image()
 
     '''1フレーム分のデータを受け取って表示する'''
     def disp_image(self):
+        time_sta = time.perf_counter()
         '''canvasに画像を表示'''
+
+        '''TCP'''
+        '''
         HOST = '192.168.143.152'
-        PORT = 8080 
-
-        host = '192.168.143.133'
-        port = 8890
-
-        locaddr = (host, port)
-
-        sock=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)  
-        #sock.connect((HOST,8080))
-        sock.bind(locaddr)
+        PORT = 8081 
+        sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)  
+        sock.connect((HOST,8081))
         #time_sta = time.perf_counter()   
-        #sock.send(('Hello Raspberry').encode("utf-8"))
+        sock.send(('Hello Raspberry').encode("utf-8"))
         buf = b''
         recvlen = 100
         while recvlen > 0:
-            receivedstr =   sock.recv(99999)
+            receivedstr =   sock.recv(1024)
             recvlen = len(receivedstr)
             buf += receivedstr
 
         sock.close
-        #time_end = time.perf_counter()
-        #tim = time_end - time_sta
-        #print(tim)
 
-        time_sta = time.perf_counter()
 
         narray = numpy.fromstring(buf, dtype='uint8')
         img = cv2.imdecode(narray,1)
+        '''
+        '''UDP'''
+        udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        #udp.bind(('192.168.143.133', 9999))
+        udp.connect(('192.168.143.152', 9999))
+        udp.send(('Hello Raspberry').encode("utf-8"))
+        buff = 1024 * 64
 
-        #frame = cv2.resize(frame,(1275.765))
+        recive_data = bytes()
+        while True:
+            # 送られてくるデータが大きいので一度に受け取るデータ量を大きく設定
+            jpg_str, addr = udp.recvfrom(buff)
+            is_len = len(jpg_str) == 7
+            is_end = jpg_str == b'__end__'
+            if is_len and is_end: break
+            recive_data += jpg_str
+
+        if len(recive_data) == 0: return
+
+        # string型からnumpyを用いuint8に戻す
+        narray = numpy.fromstring(recive_data, dtype='uint8')
+
+        # uint8のデータを画像データに戻す
+        img = cv2.imdecode(narray, 1)
+        #cv2.imshow('recognaize', img)
+        #cv2.waitKey(0)
+
         #BGR->RGB変換
         cv_image = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+
         # NumPyのndarrayからPillowのImageへ変換
+        
         pil_image = Image.fromarray(cv_image)
 
         # キャンバスのサイズを取得
-        canvas_width = self.cvs.winfo_width()
-        canvas_height = self.cvs.winfo_height()
+        #canvas_width = self.cvs.winfo_width()
+        #canvas_height = self.cvs.winfo_height()
 
         # 画像のアスペクト比（縦横比）を崩さずに指定したサイズ（キャンバスのサイズ）全体に画像をリサイズする
         #pil_image = ImageOps.pad(pil_image, (canvas_width, canvas_height))
-
+    
         pil_image = pil_image.resize((1275, 765))
+
         #PIL.ImageからPhotoImageへ変換する
+        
         self.bg = ImageTk.PhotoImage(pil_image)
+
+        #time_sta = time.perf_counter()
         #画像描画
         self.cvs.create_image(0,0,anchor='nw',image=self.bg)
 
@@ -173,12 +201,19 @@ class MyApp(ttk.Frame):
         tim = time_end - time_sta
         print(tim)
 
+        
+        #outfile = open('time_test.csv', 'a', newline='')
+        #writer = csv.writer(outfile)
+        #writer.writerow([tim])
+
         #画像更新のために10msスレッドを空ける
         self.after(10, self.disp_image)
 
     '''文字列送信用'''
     def control(self, data):
-        HOST='192.168.11.26'
+        #time_sta = time.perf_counter()
+
+        HOST='192.168.143.152'
         PORT=8080
         BUFFER=4096
             # Define socket communication type ipv4, tcp
@@ -195,6 +230,10 @@ class MyApp(ttk.Frame):
             except ConnectionResetError:
                 pass
         buf=soc.recv(BUFFER)
+        
+        #time_end = time.perf_counter()
+        #tim = time_end - time_sta
+        #print(tim)
 
         print(buf)
 

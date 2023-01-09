@@ -122,14 +122,21 @@ class MyApp(ttk.Frame):
         '''canvasに画像を表示'''
         HOST = '192.168.143.152'
         PORT = 8080 
-        sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)  
-        sock.connect((HOST,8080))
+
+        host = '192.168.143.133'
+        port = 8890
+
+        locaddr = (host, port)
+
+        sock=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)  
+        #sock.connect((HOST,8080))
+        sock.bind(locaddr)
         #time_sta = time.perf_counter()   
-        sock.send(('Hello Raspberry').encode("utf-8"))
+        #sock.send(('Hello Raspberry').encode("utf-8"))
         buf = b''
         recvlen = 100
         while recvlen > 0:
-            receivedstr =   sock.recv(1024)
+            receivedstr =   sock.recv(99999)
             recvlen = len(receivedstr)
             buf += receivedstr
 

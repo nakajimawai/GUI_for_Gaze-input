@@ -119,27 +119,6 @@ class MyApp(ttk.Frame):
         #time_sta = time.perf_counter()
         '''canvasに画像を表示'''
 
-        '''TCP'''
-        '''
-        HOST = '192.168.143.152'
-        PORT = 8081 
-        sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)  
-        sock.connect((HOST,8081))
-        #time_sta = time.perf_counter()   
-        sock.send(('Hello Raspberry').encode("utf-8"))
-        buf = b''
-        recvlen = 100
-        while recvlen > 0:
-            receivedstr =   sock.recv(1024)
-            recvlen = len(receivedstr)
-            buf += receivedstr
-
-        sock.close
-
-
-        narray = numpy.fromstring(buf, dtype='uint8')
-        img = cv2.imdecode(narray,1)
-        '''
         '''UDP'''
 
         udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -178,14 +157,8 @@ class MyApp(ttk.Frame):
         # NumPyのndarrayからPillowのImageへ変換
         
         pil_image = Image.fromarray(cv_image)
-
-        # キャンバスのサイズを取得
-        #canvas_width = self.cvs.winfo_width()
-        #canvas_height = self.cvs.winfo_height()
-
-        # 画像のアスペクト比（縦横比）を崩さずに指定したサイズ（キャンバスのサイズ）全体に画像をリサイズする
-        #pil_image = ImageOps.pad(pil_image, (canvas_width, canvas_height))
     
+        #画面のサイズにリサイズ
         pil_image = pil_image.resize((1275, 765))
 
         #PIL.ImageからPhotoImageへ変換する

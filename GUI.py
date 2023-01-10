@@ -5,25 +5,20 @@ import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk, ImageOps
 import cv2, numpy, time, csv
+from concurrent.futures import ProcessPoolExecutor
 #Set server ip address, port, buffer capacity
 
 
 class MyApp(ttk.Frame):
     
     '''ボタンやキャンバスの設定、表示'''
-    def __init__(self, root, controller):  
+    def __init__(self, root, controler):  
 
         root.geometry('1275x765')
         root.title("GUI_for_gaze input")
-        #ウィジェット
-        #frame1 = tk.Frame(root)
+        
+        ###フレーム作成###
         ttk.Frame.__init__(self, root, width=1275, height=765, padding=10)
-        #self.controller = controller
-        ###画像読み込み###
-
-        ###背景映像読み込み###
-        self.cap0 = cv2.VideoCapture(0)
-
 
         ###背景画像用のキャンバス###
         self.cvs = tk.Canvas(self,width=1275,height=765)
@@ -32,9 +27,6 @@ class MyApp(ttk.Frame):
             rely=0,
             bordermode=tk.OUTSIDE
         )
-        #bg = Image.open(video_img)
-        #bg = bg.resize((1275, 765))
-        ######
 
         ###シンボル作成###
         #前進シンボル
@@ -120,9 +112,11 @@ class MyApp(ttk.Frame):
         '''動画表示''' 
         self.disp_image()
 
+    time_sta = time.perf_counter()
+
     '''1フレーム分のデータを受け取って表示する'''
     def disp_image(self):
-        time_sta = time.perf_counter()
+        #time_sta = time.perf_counter()
         '''canvasに画像を表示'''
 
         '''TCP'''
@@ -147,6 +141,7 @@ class MyApp(ttk.Frame):
         img = cv2.imdecode(narray,1)
         '''
         '''UDP'''
+
         udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         #udp.bind(('192.168.143.133', 9999))
         udp.connect(('192.168.143.152', 9999))
@@ -162,8 +157,11 @@ class MyApp(ttk.Frame):
             if is_len and is_end: break
             recive_data += jpg_str
 
-        if len(recive_data) == 0: return
+        if len(recive_data) == 0:
+            print("フレームなし")
+            return
 
+        #time_sta = time.perf_counter()
         # string型からnumpyを用いuint8に戻す
         narray = numpy.fromstring(recive_data, dtype='uint8')
 
@@ -171,6 +169,7 @@ class MyApp(ttk.Frame):
         img = cv2.imdecode(narray, 1)
         #cv2.imshow('recognaize', img)
         #cv2.waitKey(0)
+
 
         #BGR->RGB変換
         cv_image = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -197,12 +196,12 @@ class MyApp(ttk.Frame):
         #画像描画
         self.cvs.create_image(0,0,anchor='nw',image=self.bg)
 
-        time_end = time.perf_counter()
-        tim = time_end - time_sta
-        print(tim)
+        #time_end = time.perf_counter()
+        #tim = time_end - time_sta
+        #print(tim)
 
         
-        #outfile = open('time_test.csv', 'a', newline='')
+        #outfile = open('time_test_udp.csv', 'a', newline='')
         #writer = csv.writer(outfile)
         #writer.writerow([tim])
 
@@ -260,9 +259,18 @@ class MyApp(ttk.Frame):
         self.control("x")
 
 
+    time_end = time.perf_counter()
+    tim = time_end - time_sta
+    print(tim)
 if __name__ == "__main__":
 
     root = tk.Tk()
     frame = MyApp(root, object())
+
+    with ProcessPoolExecutor(max_workers=2) as executor:
+        executor.submit(frame.disp_image)
+        executor.submit(frame.__init__)
+    
     frame.pack()
     root.mainloop()
+    

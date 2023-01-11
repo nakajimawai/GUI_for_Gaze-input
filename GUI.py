@@ -4,8 +4,9 @@ import socket
 import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk, ImageOps
-import cv2, numpy, time, csv
-from concurrent.futures import ProcessPoolExecutor
+import cv2, numpy, time, csv, sys
+import threading
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 #Set server ip address, port, buffer capacity
 
 
@@ -16,6 +17,9 @@ class MyApp(ttk.Frame):
 
         root.geometry('1275x765')
         root.title("GUI_for_gaze input")
+
+        self.recive_data = bytes()
+        self.lock = threading.Lock()
         
         ###フレーム作成###
         ttk.Frame.__init__(self, root, width=1275, height=765, padding=10)
@@ -110,39 +114,49 @@ class MyApp(ttk.Frame):
 
         ######
         '''動画表示''' 
+        self.receive_img_data()
         self.disp_image()
 
-    time_sta = time.perf_counter()
-
-    '''1フレーム分のデータを受け取って表示する'''
-    def disp_image(self):
-        #time_sta = time.perf_counter()
-        '''canvasに画像を表示'''
-
+    def receive_img_data(self):
         '''UDP'''
-
         udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         #udp.bind(('192.168.143.133', 9999))
         udp.connect(('192.168.143.152', 9999))
         udp.send(('Hello Raspberry').encode("utf-8"))
         buff = 1024 * 64
 
-        recive_data = bytes()
-        while True:
-            # 送られてくるデータが大きいので一度に受け取るデータ量を大きく設定
-            jpg_str, addr = udp.recvfrom(buff)
-            is_len = len(jpg_str) == 7
-            is_end = jpg_str == b'__end__'
-            if is_len and is_end: break
-            recive_data += jpg_str
+        #self.recive_data = bytes()
 
-        if len(recive_data) == 0:
+        with self.lock:
+            while True:
+                # 送られてくるデータが大きいので一度に受け取るデータ量を大きく設定
+                jpg_str, addr = udp.recvfrom(buff)
+                is_len = len(jpg_str) == 7
+                is_end = jpg_str == b'__end__'
+                if is_len and is_end: break
+                self.recive_data += jpg_str
+
+            if len(self.recive_data) == 0:
+                print("フレームなし")
+                return
+
+        #画像更新のために10msスレッドを空ける
+        #self.disp_image()
+        self.after(10, self.receive_img_data)
+       
+
+    '''1フレーム分のデータを受け取って表示する'''
+    def disp_image(self):
+        #time_sta = time.perf_counter()
+        '''canvasに画像を表示'''
+
+        if len(self.recive_data) == 0:
             print("フレームなし")
             return
 
         #time_sta = time.perf_counter()
         # string型からnumpyを用いuint8に戻す
-        narray = numpy.fromstring(recive_data, dtype='uint8')
+        narray = numpy.frombuffer(self.recive_data, dtype='uint8')
 
         # uint8のデータを画像データに戻す
         img = cv2.imdecode(narray, 1)
@@ -231,19 +245,23 @@ class MyApp(ttk.Frame):
         print("後進")
         self.control("x")
 
-
-    time_end = time.perf_counter()
-    tim = time_end - time_sta
-    print(tim)
 if __name__ == "__main__":
 
     root = tk.Tk()
     frame = MyApp(root, object())
 
-    with ProcessPoolExecutor(max_workers=2) as executor:
-        executor.submit(frame.disp_image)
-        executor.submit(frame.__init__)
-    
     frame.pack()
     root.mainloop()
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        while True:
+            try:
+                executor.submit(frame, frame.receive_img_data, frame.disp_image)
+                '''
+                executor.submit(frame.__init__)
+                executor.submit(frame.receive_img_data)
+                executor.submit(frame.disp_image)
+                '''
+            except KeyboardInterrupt:
+                sys.exit()
+
     

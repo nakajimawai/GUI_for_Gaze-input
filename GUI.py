@@ -21,7 +21,7 @@ class MyApp(ttk.Frame):
 
         self.recive_data = bytes()
         self.lock = threading.Lock()
-        self.flag = True
+        #self.flag = True
         #self.q = queue.Queue()
         
         ###フレーム作成###
@@ -154,56 +154,59 @@ class MyApp(ttk.Frame):
 
     '''1フレーム分のデータを受け取って表示する'''
     def disp_image(self):
-        #time_sta = time.perf_counter()
+        time_sta = time.perf_counter()
         '''canvasに画像を表示'''
         #data = self.q.get()
         #if len(data) == 0:
-        if q.empty():
-            print("フレームなし")
-            pass
-        else:
+
+        global flag
+
+        #if q.empty():
+            #print("フレームなし")
+            #pass
+        #else:
             #with self.lock:
                 #time_sta = time.perf_counter()
                 # string型からnumpyを用いuint8に戻す
-                data = q.get()
-                narray = numpy.frombuffer(data, dtype='uint8')
+        data = q.get()
+        narray = numpy.frombuffer(data, dtype='uint8')
 
-                # uint8のデータを画像データに戻す
-                img = cv2.imdecode(narray, 1)
-                #cv2.imshow('recognaize', img)
-                #cv2.waitKey(0)
-
-
-                #BGR->RGB変換
-                cv_image = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        # uint8のデータを画像データに戻す
+        img = cv2.imdecode(narray, 1)
+        #cv2.imshow('recognaize', img)
+        #cv2.waitKey(0)
 
 
-                # NumPyのndarrayからPillowのImageへ変換
-                
-                pil_image = Image.fromarray(cv_image)
-            
-                #画面のサイズにリサイズ
-                pil_image = pil_image.resize((1275, 765))
+        #BGR->RGB変換
+        cv_image = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-                #PIL.ImageからPhotoImageへ変換する
-                
-                self.bg = ImageTk.PhotoImage(pil_image)
 
-                #time_sta = time.perf_counter()
-                #画像描画
-                self.cvs.create_image(0,0,anchor='nw',image=self.bg)
-                print("更新")
-                self.flag = True
-                #time_end = time.perf_counter()
-                #tim = time_end - time_sta
-                #print(tim)
+        # NumPyのndarrayからPillowのImageへ変換
+        
+        pil_image = Image.fromarray(cv_image)
+    
+        #画面のサイズにリサイズ
+        pil_image = pil_image.resize((1275, 765))
 
-                
-                #outfile = open('time_test_udp.csv', 'a', newline='')
-                #writer = csv.writer(outfile)
-                #writer.writerow([tim])
+        #PIL.ImageからPhotoImageへ変換する
+        
+        self.bg = ImageTk.PhotoImage(pil_image)
 
-                #画像更新のために10msスレッドを空ける
+        #time_sta = time.perf_counter()
+        #画像描画
+        self.cvs.create_image(0,0,anchor='nw',image=self.bg)
+        #print("更新")
+        flag = True
+        time_end = time.perf_counter()
+        tim = time_end - time_sta
+        print("表示までの時間："+str(tim))
+
+        
+        #outfile = open('time_test_udp.csv', 'a', newline='')
+        #writer = csv.writer(outfile)
+        #writer.writerow([tim])
+
+        #画像更新のために10msスレッドを空ける
         self.after(10, self.disp_image)
 
 
@@ -258,8 +261,10 @@ class MyApp(ttk.Frame):
         self.control("x")
 
 def receive_img_data():
+        global flag
         while True:
-            #if self.flag:
+            if flag:
+                time_staa = time.perf_counter()
                 #UDP
                 udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 #udp.bind(('192.168.143.133', 9999))
@@ -279,23 +284,26 @@ def receive_img_data():
                     recive_data += jpg_str
 
                     if len(recive_data) == 0:
-                        print("フレームなし")
+                        print("受信失敗")
                         return
-                print("受信")
-                #self.flag = False
+                #print("受信")
+                flag = False
                 q.put(recive_data)
-                #time.sleep(2)
-            #else:
-             #   continue
+
+                time_endd = time.perf_counter()
+                timm = time_endd - time_staa
+                print("受信までの時間："+str(timm))
+            else:
+                continue
 
 if __name__ == "__main__":
 
     root = tk.Tk()
     frame = MyApp(root, object())
-    frame.disp_image()
     frame.pack()
     thread1 = threading.Thread(target=receive_img_data)
     thread1.start()
+    frame.disp_image()
     root.mainloop()
 
 

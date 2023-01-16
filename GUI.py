@@ -156,19 +156,9 @@ class MyApp(ttk.Frame):
     def disp_image(self):
         time_sta = time.perf_counter()
         '''canvasに画像を表示'''
-        #data = self.q.get()
-        #if len(data) == 0:
-
-        global flag
-
-        #if q.empty():
-            #print("フレームなし")
-            #pass
-        #else:
-            #with self.lock:
-                #time_sta = time.perf_counter()
-                # string型からnumpyを用いuint8に戻す
-        data = q.get()
+        
+        # string型からnumpyを用いuint8に戻す
+        data = q.get(block=True, timeout=None)
         narray = numpy.frombuffer(data, dtype='uint8')
 
         # uint8のデータを画像データに戻す
@@ -196,7 +186,6 @@ class MyApp(ttk.Frame):
         #画像描画
         self.cvs.create_image(0,0,anchor='nw',image=self.bg)
         #print("更新")
-        flag = True
         time_end = time.perf_counter()
         tim = time_end - time_sta
         print("表示までの時間："+str(tim))
@@ -261,9 +250,7 @@ class MyApp(ttk.Frame):
         self.control("x")
 
 def receive_img_data():
-        global flag
         while True:
-            if flag:
                 time_staa = time.perf_counter()
                 #UDP
                 udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -293,8 +280,7 @@ def receive_img_data():
                 time_endd = time.perf_counter()
                 timm = time_endd - time_staa
                 print("受信までの時間："+str(timm))
-            else:
-                continue
+
 
 if __name__ == "__main__":
 

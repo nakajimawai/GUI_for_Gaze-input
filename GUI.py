@@ -159,6 +159,7 @@ class MyApp(ttk.Frame):
         
         # string型からnumpyを用いuint8に戻す
         data = q.get(block=True, timeout=None)
+        #q.task_done()
         narray = numpy.frombuffer(data, dtype='uint8')
 
         # uint8のデータを画像データに戻す
@@ -185,6 +186,9 @@ class MyApp(ttk.Frame):
         #time_sta = time.perf_counter()
         #画像描画
         self.cvs.create_image(0,0,anchor='nw',image=self.bg)
+        
+        #キューのタスクが完了したことをキューに教える
+        q.task_done()
         #print("更新")
         time_end = time.perf_counter()
         tim = time_end - time_sta
@@ -275,7 +279,10 @@ def receive_img_data():
                         return
                 #print("受信")
                 flag = False
+                #キューに画像データを追加
                 q.put(recive_data)
+                #キューから画像データが取り出されるまで処理をブロック
+                q.join()
 
                 time_endd = time.perf_counter()
                 timm = time_endd - time_staa

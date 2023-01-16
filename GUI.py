@@ -5,12 +5,12 @@ import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk, ImageOps
 import cv2, numpy, time, csv, sys
-import threading, queue
+import threading, multiprocessing, queue
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 #Set server ip address, port, buffer capacity
 
 q = queue.Queue()
-flag = True
+
 class MyApp(ttk.Frame):
     
     '''ボタンやキャンバスの設定、表示'''
@@ -18,11 +18,6 @@ class MyApp(ttk.Frame):
 
         root.geometry('1275x765')
         root.title("GUI_for_gaze input")
-
-        self.recive_data = bytes()
-        self.lock = threading.Lock()
-        #self.flag = True
-        #self.q = queue.Queue()
         
         ###フレーム作成###
         ttk.Frame.__init__(self, root, width=1275, height=765, padding=10)
@@ -115,90 +110,38 @@ class MyApp(ttk.Frame):
             anchor=tk.CENTER
         )
 
-        ######
-        '''動画表示''' 
-        #self.receive_img_data()
-        #self.disp_image()
-
-    '''def receive_img_data(self):
-        while True:
-            #if self.flag:
-                #UDP
-                udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                #udp.bind(('192.168.143.133', 9999))
-                udp.connect(('192.168.143.152', 9999))
-                udp.send(('Hello Raspberry').encode("utf-8"))
-                buff = 1024 * 64
-
-                #self.recive_data = bytes()
-
-                #with self.lock:
-                while True:
-                    # 送られてくるデータが大きいので一度に受け取るデータ量を大きく設定
-                    jpg_str, addr = udp.recvfrom(buff)
-                    is_len = len(jpg_str) == 7
-                    is_end = jpg_str == b'__end__'
-                    if is_len and is_end: break
-                    self.recive_data += jpg_str
-
-                    if len(self.recive_data) == 0:
-                        print("フレームなし")
-                        return
-                print("受信")
-                #self.flag = False
-                self.q.put(self.recive_data)
-                #time.sleep(2)
-            #else:
-             #   continue'''
                    
-
     '''1フレーム分のデータを受け取って表示する'''
     def disp_image(self):
-        time_sta = time.perf_counter()
         '''canvasに画像を表示'''
         
-        # string型からnumpyを用いuint8に戻す
+        #キューから画像データを取得
         data = q.get(block=True, timeout=None)
-        #q.task_done()
+
+        # string型からnumpyを用いuint8に戻す
         narray = numpy.frombuffer(data, dtype='uint8')
 
         # uint8のデータを画像データに戻す
         img = cv2.imdecode(narray, 1)
-        #cv2.imshow('recognaize', img)
-        #cv2.waitKey(0)
-
 
         #BGR->RGB変換
         cv_image = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-
         # NumPyのndarrayからPillowのImageへ変換
-        
         pil_image = Image.fromarray(cv_image)
     
         #画面のサイズにリサイズ
         pil_image = pil_image.resize((1275, 765))
 
         #PIL.ImageからPhotoImageへ変換する
-        
         self.bg = ImageTk.PhotoImage(pil_image)
 
-        #time_sta = time.perf_counter()
         #画像描画
         self.cvs.create_image(0,0,anchor='nw',image=self.bg)
         
         #キューのタスクが完了したことをキューに教える
         q.task_done()
-        #print("更新")
-        time_end = time.perf_counter()
-        tim = time_end - time_sta
-        print("表示までの時間："+str(tim))
-
         
-        #outfile = open('time_test_udp.csv', 'a', newline='')
-        #writer = csv.writer(outfile)
-        #writer.writerow([tim])
-
         #画像更新のために10msスレッドを空ける
         self.after(10, self.disp_image)
 
@@ -254,39 +197,36 @@ class MyApp(ttk.Frame):
         self.control("x")
 
 def receive_img_data():
-        while True:
-                time_staa = time.perf_counter()
-                #UDP
-                udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                #udp.bind(('192.168.143.133', 9999))
-                udp.connect(('192.168.143.152', 9999))
-                udp.send(('Hello Raspberry').encode("utf-8"))
-                buff = 1024 * 64
-                recive_data =bytes()
-                #self.recive_data = bytes()
+    '''ソケット通信で画像データを受信'''
+    while True:
+            #接続
+            udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            udp.connect(('192.168.143.152', 9999))
+            udp.send(('Hello Raspberry').encode("utf-8"))
 
-                #with self.lock:
-                while True:
-                    # 送られてくるデータが大きいので一度に受け取るデータ量を大きく設定
-                    jpg_str, addr = udp.recvfrom(buff)
-                    is_len = len(jpg_str) == 7
-                    is_end = jpg_str == b'__end__'
-                    if is_len and is_end: break
-                    recive_data += jpg_str
+            #画像データ受信用の変数を用意
+            buff = 1024 * 64
+            recive_data =bytes()
 
-                    if len(recive_data) == 0:
-                        print("受信失敗")
-                        return
-                #print("受信")
-                flag = False
-                #キューに画像データを追加
-                q.put(recive_data)
-                #キューから画像データが取り出されるまで処理をブロック
-                q.join()
+            #画像データを分割して受け取り
+            while True:
+                # 送られてくるデータが大きいので一度に受け取るデータ量を大きく設定
+                jpg_str, addr = udp.recvfrom(buff)
+                is_len = len(jpg_str) == 7
+                is_end = jpg_str == b'__end__'
+                if is_len and is_end: break
+                recive_data += jpg_str
 
-                time_endd = time.perf_counter()
-                timm = time_endd - time_staa
-                print("受信までの時間："+str(timm))
+                if len(recive_data) == 0:
+                    print("受信失敗")
+                    return
+            
+            #キューに画像データを追加
+            q.put(recive_data)
+
+            #キューから画像データが取り出されるまで処理をブロック
+            q.join()
+
 
 
 if __name__ == "__main__":
@@ -296,6 +236,7 @@ if __name__ == "__main__":
     frame.pack()
     thread1 = threading.Thread(target=receive_img_data)
     thread1.start()
+
     frame.disp_image()
     root.mainloop()
 

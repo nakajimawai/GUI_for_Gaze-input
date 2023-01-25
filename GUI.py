@@ -9,7 +9,10 @@ import threading, multiprocessing, queue
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 #Set server ip address, port, buffer capacity
 
+#受信する画像データをスレッド間で共有するためのキュー
 q = queue.Queue()
+#前方カメラか後方カメラ、どちらを受け取る画像データにするか判断するための変数（F：前方、B：後方）
+img_flag = 'F'
 
 class MyApp(tk.Tk):
     
@@ -29,7 +32,7 @@ class MyApp(tk.Tk):
         self.grid_columnconfigure(0, weight=1)
 
         #フレームごとで映像を表示するためのフラグ
-        self.flag = 'stop'
+        self.flag = 'S'
 
 #-----------------------------forward_frame------------------------------
 
@@ -156,12 +159,12 @@ class MyApp(tk.Tk):
         self.button_change_forward_frame = tk.Button(
             self.stop_frame,
             image=self.img_change_forward,
-            command=lambda : [self.changePage(self.forward_frame), self.change_frame_flag("forward")]
+            command=lambda : [self.changePage(self.forward_frame), self.change_frame_flag("F")]
         )
         #貼り付け
         self.button_change_forward_frame.place(
-            x = 637,
-            y = 80,
+            x = 300,
+            y = 382,
             anchor=tk.CENTER
         )
 
@@ -169,12 +172,12 @@ class MyApp(tk.Tk):
         self.button_change_back_frame = tk.Button(
             self.stop_frame,
             image=self.img_change_back,
-            command=lambda : [self.changePage(self.back_frame), self.change_frame_flag("back")]
+            command=lambda : [self.changePage(self.back_frame), self.change_frame_flag("B")]
         )
         #貼り付け
         self.button_change_back_frame.place(
-            x = 637,
-            y = 680,
+            x = 950,
+            y = 382,
             anchor=tk.CENTER
         )
 
@@ -282,7 +285,7 @@ class MyApp(tk.Tk):
     '''1フレーム分のデータを受け取って表示する'''
     def disp_image(self):
         '''canvasに画像を表示'''
-        
+        time_sta = time.perf_counter()
         #キューから画像データを取得
         data = q.get(block=True, timeout=None)
 
@@ -305,16 +308,18 @@ class MyApp(tk.Tk):
         self.bg = ImageTk.PhotoImage(pil_image)
 
         #画像描画
-        if self.flag == 'forward':
+        if self.flag == 'F':
             self.cvs_forward.create_image(0,0,anchor='nw',image=self.bg)
-        elif self.flag == 'stop':
+        elif self.flag == 'S':
             self.cvs_stop.create_image(0,0,anchor='nw',image=self.bg)
-        elif self.flag == 'back':
+        elif self.flag == 'B':
             self.cvs_back.create_image(0,0,anchor='nw',image=self.bg)            
         
         #キューのタスクが完了したことをキューに教える
         q.task_done()
-        
+        time_end = time.perf_counter()
+        tim = time_end - time_sta
+        print("メイン："+str(tim))
         #画像更新のために10msスレッドを空ける
         self.after(10, self.disp_image)
 
@@ -364,7 +369,7 @@ class MyApp(tk.Tk):
     def stop(self):
         print("停止")
         self.changePage(self.stop_frame)
-        self.flag = 'stop'
+        self.flag = 'S'
         #self.control("s")
     #ボタンstop
     def back(self):
@@ -373,7 +378,10 @@ class MyApp(tk.Tk):
 
     '''フレームごとで映像を表示し続けるために、フラグを変更する関数'''
     def change_frame_flag(self, frame_flag):
+        global img_flag
+
         self.flag = frame_flag
+        img_flag = frame_flag
 
     '''画面遷移用の関数'''
     def changePage(self, page):
@@ -390,11 +398,18 @@ class MyApp(tk.Tk):
 
 def receive_img_data():
     '''ソケット通信で画像データを受信'''
+    global img_flag
     while True:
+            time_staa = time.perf_counter()
             #接続
             udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             udp.connect(('192.168.143.152', 9999))
-            udp.send(('Hello Raspberry').encode("utf-8"))
+
+            #前方か後方どっちのカメラ映像を取得したいのかをラズパイに伝える
+            if img_flag == 'F':
+                udp.send(('F').encode("utf-8"))
+            elif img_flag == 'B':
+                udp.send(('B').encode("utf-8"))
 
             #画像データ受信用の変数を用意
             buff = 1024 * 64
@@ -415,7 +430,9 @@ def receive_img_data():
             
             #キューに画像データを追加
             q.put(recive_data)
-
+            time_endd = time.perf_counter()
+            timm = time_endd - time_staa
+            print("サブ："+str(timm))
             #キューから画像データが取り出されるまで処理をブロック
             q.join()
 

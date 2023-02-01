@@ -285,8 +285,9 @@ class MyApp(tk.Tk):
     '''1フレーム分のデータを受け取って表示する'''
     def disp_image(self):
         '''canvasに画像を表示'''
-        time_sta = time.perf_counter()
+        #time_sta = time.perf_counter()
         #キューから画像データを取得
+        
         data = q.get(block=True, timeout=None)
 
         # string型からnumpyを用いuint8に戻す
@@ -295,40 +296,45 @@ class MyApp(tk.Tk):
         # uint8のデータを画像データに戻す
         img = cv2.imdecode(narray, 1)
 
-        #BGR->RGB変換
-        cv_image = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        #エラー処理
+        if img is None:
+            print("受け取りエラー")
+            q.task_done()
+        else:
+            #BGR->RGB変換
+            cv_image = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-        # NumPyのndarrayからPillowのImageへ変換
-        pil_image = Image.fromarray(cv_image)
-    
-        #画面のサイズにリサイズ
-        pil_image = pil_image.resize((1275, 765))
-
-        #PIL.ImageからPhotoImageへ変換する
-        self.bg = ImageTk.PhotoImage(pil_image)
-
-        #画像描画
-        if self.flag == 'F':
-            self.cvs_forward.create_image(0,0,anchor='nw',image=self.bg)
-        elif self.flag == 'S':
-            self.cvs_stop.create_image(0,0,anchor='nw',image=self.bg)
-        elif self.flag == 'B':
-            self.cvs_back.create_image(0,0,anchor='nw',image=self.bg)            
+            # NumPyのndarrayからPillowのImageへ変換
+            pil_image = Image.fromarray(cv_image)
         
-        #キューのタスクが完了したことをキューに教える
-        q.task_done()
-        time_end = time.perf_counter()
-        tim = time_end - time_sta
-        print("メイン："+str(tim))
-        #画像更新のために10msスレッドを空ける
+            #画面のサイズにリサイズ
+            pil_image = pil_image.resize((1275, 765))
+
+            #PIL.ImageからPhotoImageへ変換する
+            self.bg = ImageTk.PhotoImage(pil_image)
+
+            #画像描画
+            if self.flag == 'F':
+                self.cvs_forward.create_image(0,0,anchor='nw',image=self.bg)
+            elif self.flag == 'S':
+                self.cvs_stop.create_image(0,0,anchor='nw',image=self.bg)
+            elif self.flag == 'B':
+                self.cvs_back.create_image(0,0,anchor='nw',image=self.bg)            
+            
+            #キューのタスクが完了したことをキューに教える
+            q.task_done()
+            #time_end = time.perf_counter()
+            #tim = time_end - time_sta
+            #print("メイン："+str(tim))
+            #画像更新のために10msスレッドを空ける
         self.after(10, self.disp_image)
 
-
+    
     '''文字列送信用'''
     def control(self, data):
         #time_sta = time.perf_counter()
 
-        HOST='192.168.143.152'
+        HOST='192.168.11.26'
         PORT=8080
         BUFFER=4096
             # Define socket communication type ipv4, tcp
@@ -370,7 +376,7 @@ class MyApp(tk.Tk):
         print("停止")
         self.changePage(self.stop_frame)
         self.flag = 'S'
-        #self.control("s")
+        self.control("s")
     #ボタンstop
     def back(self):
         print("後進")
@@ -400,10 +406,11 @@ def receive_img_data():
     '''ソケット通信で画像データを受信'''
     global img_flag
     while True:
-            time_staa = time.perf_counter()
+            #time_staa = time.perf_counter()
             #接続
+            socket.setdefaulttimeout(1.0)
             udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            udp.connect(('192.168.143.152', 9999))
+            udp.connect(('192.168.11.26', 9999))
 
             #前方か後方どっちのカメラ映像を取得したいのかをラズパイに伝える
             if img_flag == 'F':
@@ -414,27 +421,33 @@ def receive_img_data():
             #画像データ受信用の変数を用意
             buff = 1024 * 64
             recive_data =bytes()
-
+            time_staa = time.time()
             #画像データを分割して受け取り
-            while True:
-                # 送られてくるデータが大きいので一度に受け取るデータ量を大きく設定
-                jpg_str, addr = udp.recvfrom(buff)
-                is_len = len(jpg_str) == 7
-                is_end = jpg_str == b'__end__'
-                if is_len and is_end: break
-                recive_data += jpg_str
+            try:
+                while True:
+                    # 送られてくるデータが大きいので一度に受け取るデータ量を大きく設定
+                    jpg_str, addr = udp.recvfrom(buff)
+                    is_len = len(jpg_str) == 7
+                    is_end = jpg_str == b'__end__'
+                    if is_len and is_end: break
+                    recive_data += jpg_str
+                    
+                    #人力タイムアウト処理
+                    if (time.time() - time_staa) >= 1:
+                        print("データ受信タイムアウト")
+                        break
+                
+                #キューに画像データを追加
+                q.put(recive_data)
+                #time_endd = time.perf_counter()
+                #timm = time_endd - time_staa
+                #print("サブ："+str(timm))
+                #キューから画像データが取り出されるまで処理をブロック
+                q.join()
+            except:
+                print("Wi-Fi切断")
 
-                if len(recive_data) == 0:
-                    print("受信失敗")
-                    return
-            
-            #キューに画像データを追加
-            q.put(recive_data)
-            time_endd = time.perf_counter()
-            timm = time_endd - time_staa
-            print("サブ："+str(timm))
-            #キューから画像データが取り出されるまで処理をブロック
-            q.join()
+
 
 
 

@@ -86,11 +86,11 @@ class MyApp(tk.Tk):
         self.button_stop = tk.Button(
             self.forward_frame,
             image=self.img_stop,
-            command=self.stop
+            command=self.stop_forward
         )
         #貼り付け
         self.button_stop.place(
-            x = 637,
+            x = 337,
             y = 660,
             width=200,
             height=200,
@@ -127,14 +127,14 @@ class MyApp(tk.Tk):
             anchor=tk.CENTER
         )
 #----------------------------------------------------------------------
-#-----------------------stop_frame-------------------------------------
-        #停止時のフレームを作成
-        self.stop_frame = ttk.Frame()
-        self.stop_frame.grid(row=0, column=0, sticky="nsew")
+#-----------------------stop__forward_frame-------------------------------------
+        #前方走行中の停止時フレームを作成
+        self.stop_forward_frame = ttk.Frame()
+        self.stop_forward_frame.grid(row=0, column=0, sticky="nsew")
 
         ###背景画像用のキャンバス###
-        self.cvs_stop = tk.Canvas(self.stop_frame,width=1275,height=765)
-        self.cvs_stop.place(
+        self.cvs_stop_forward = tk.Canvas(self.stop_forward_frame,width=1275,height=765)
+        self.cvs_stop_forward.place(
             relx=0,
             rely=0,
             bordermode=tk.OUTSIDE
@@ -143,11 +143,11 @@ class MyApp(tk.Tk):
          ###シンボル作成###       
         #前方向への画面遷移シンボル
         self.img_change_forward = Image.open('change_forward.png')
-        self.img_change_forward = self.img_change_forward.resize((300, 150))
+        self.img_change_forward = self.img_change_forward.resize((200, 100))
         self.img_change_forward = ImageTk.PhotoImage(self.img_change_forward)
         #後ろ方向への画面遷移シンボル
         self.img_change_back = Image.open('change_back.png')
-        self.img_change_back = self.img_change_back.resize((300, 150))
+        self.img_change_back = self.img_change_back.resize((200, 100))
         self.img_change_back = ImageTk.PhotoImage(self.img_change_back)
         #終了シンボル
         self.img_finish = Image.open('finish_letter.png')
@@ -155,6 +155,7 @@ class MyApp(tk.Tk):
         self.img_finish = ImageTk.PhotoImage(self.img_finish)
 
         ###ボタン設置###
+        '''
         #前方画面に遷移するボタン
         self.button_change_forward_frame = tk.Button(
             self.stop_frame,
@@ -167,20 +168,62 @@ class MyApp(tk.Tk):
             y = 382,
             anchor=tk.CENTER
         )
-
-        #後方画面に遷移するボタン
-        self.button_change_back_frame = tk.Button(
-            self.stop_frame,
-            image=self.img_change_back,
-            command=lambda : [self.changePage(self.back_frame), self.change_frame_flag("B")]
+        '''
+        #前進ボタン
+        self.button_forward = tk.Button(
+            self.stop_forward_frame,
+            image=self.img_forward,
+            command=self.forward
         )
         #貼り付け
-        self.button_change_back_frame.place(
-            x = 950,
-            y = 382,
+        self.button_forward.place(
+            x = 637,
+            y = 50,
             anchor=tk.CENTER
         )
 
+        #cw旋回ボタン
+        self.button_cw = tk.Button(
+            self.stop_forward_frame,
+            image=self.img_cw,
+            command=self.cw
+        )
+        #貼り付け
+        self.button_cw.place(
+            x = 1185,
+            y = 382,
+            width=150,
+            height=200,
+            anchor=tk.CENTER
+        )
+
+        #ccw旋回ボタン
+        self.button_ccw = tk.Button(
+            self.stop_forward_frame,
+            image=self.img_ccw,
+            command=self.ccw
+        )
+        #貼り付け
+        self.button_ccw.place(
+            x = 67,
+            y = 382,
+            width=150,
+            height=200,
+            anchor=tk.CENTER
+        )
+        #後方画面に遷移するボタン
+        self.button_change_back_frame = tk.Button(
+            self.stop_forward_frame,
+            image=self.img_change_back,
+            command=lambda : [self.changePage(self.stop_back_frame), self.change_frame_flag("B")]
+        )
+        #貼り付け
+        self.button_change_back_frame.place(
+            x =1150,
+            y = 682,
+            anchor=tk.CENTER
+        )
+        '''
         #終了ボタン
         self.button_finish = tk.Button(
             self.stop_frame,
@@ -195,6 +238,7 @@ class MyApp(tk.Tk):
             height=110,
             anchor=tk.CENTER
         )
+        '''
 #--------------------------------------------------------------------------------------------------------
 #------------------------------------back_frame---------------------------------------------------------
         #後方画面フレーム作成
@@ -235,11 +279,11 @@ class MyApp(tk.Tk):
         self.button_stop = tk.Button(
             self.back_frame,
             image=self.img_stop,
-            command=self.stop
+            #command=self.stop
         )
         #貼り付け
         self.button_stop.place(
-            x = 637,
+            x = 337,
             y = 660,
             width=200,
             height=200,
@@ -276,10 +320,97 @@ class MyApp(tk.Tk):
             anchor=tk.CENTER
         )
 #----------------------------------------------------------------------
+#-----------------------stop_back_frame-------------------------------------
+        #後方走行中の停止時フレームを作成
+        self.stop_back_frame = ttk.Frame()
+        self.stop_back_frame.grid(row=0, column=0, sticky="nsew")
 
+        ###背景画像用のキャンバス###
+        self.cvs_stop_back = tk.Canvas(self.stop_back_frame,width=1275,height=765)
+        self.cvs_stop_back.place(
+            relx=0,
+            rely=0,
+            bordermode=tk.OUTSIDE
+        )
+
+
+        ###ボタン設置###
+
+        #前進ボタン
+        self.button_forward = tk.Button(
+            self.stop_back_frame,
+            image=self.img_forward,
+            command=self.forward
+        )
+        #貼り付け
+        self.button_forward.place(
+            x = 637,
+            y = 50,
+            anchor=tk.CENTER
+        )
+
+        #cw旋回ボタン
+        self.button_cw = tk.Button(
+            self.stop_back_frame,
+            image=self.img_cw,
+            command=self.cw
+        )
+        #貼り付け
+        self.button_cw.place(
+            x = 1185,
+            y = 382,
+            width=150,
+            height=200,
+            anchor=tk.CENTER
+        )
+
+        #ccw旋回ボタン
+        self.button_ccw = tk.Button(
+            self.stop_back_frame,
+            image=self.img_ccw,
+            command=self.ccw
+        )
+        #貼り付け
+        self.button_ccw.place(
+            x = 67,
+            y = 382,
+            width=150,
+            height=200,
+            anchor=tk.CENTER
+        )
+
+        #前方停止画面に遷移するボタン
+        self.button_change_forward_frame = tk.Button(
+            self.stop_back_frame,
+            image=self.img_change_forward,
+            command=lambda : [self.changePage(self.stop_forward_frame), self.change_frame_flag("F")]
+        )
+        #貼り付け
+        self.button_change_forward_frame.place(
+            x = 950,
+            y = 682,
+            anchor=tk.CENTER
+        )
+        '''
+        #終了ボタン
+        self.button_finish = tk.Button(
+            self.stop_frame,
+            image=self.img_finish,
+            command=self.Finish
+        )
+        #貼り付け
+        self.button_finish.place(
+            x = 80,
+            y = 720,
+            width=150,
+            height=110,
+            anchor=tk.CENTER
+        )
+        '''
+#--------------------------------------------------------------------------------------------------------
 
         #停止画面を最前面で表示
-        self.stop_frame.tkraise()
+        self.forward_frame.tkraise()
         
                    
     '''1フレーム分のデータを受け取って表示する'''
@@ -371,13 +502,19 @@ class MyApp(tk.Tk):
     def ccw(self):
         print("左旋回")
         self.control("a")
-    #ボタンstop
-    def stop(self):
+    #前方走行時のボタンstop
+    def stop_forward(self):
         print("停止")
-        self.changePage(self.stop_frame)
+        self.changePage(self.stop_forward_frame)
         self.flag = 'S'
         self.control("s")
-    #ボタンstop
+    #後方走行時のボタンstop
+    def stop_back(self):
+        print("停止")
+        self.changePage(self.stop_back_frame)
+        self.flag = 'S'
+        self.control("s")
+    #ボタンback
     def back(self):
         print("後進")
         self.control("x")
@@ -457,7 +594,7 @@ if __name__ == "__main__":
     
     thread1 = threading.Thread(target=receive_img_data)
     thread1.start()
-    root.disp_image()
+    #root.disp_image()
     root.mainloop()
 
 

@@ -86,7 +86,7 @@ class MyApp(tk.Tk):
         self.button_stop = tk.Button(
             self.forward_frame,
             image=self.img_stop,
-            command=self.stop_forward
+            command=lambda : [self.changePage(self.stop_forward_frame), self.change_frame_flag("S_F"), self.stop]
         )
         #貼り付け
         self.button_stop.place(
@@ -173,7 +173,7 @@ class MyApp(tk.Tk):
         self.button_forward = tk.Button(
             self.stop_forward_frame,
             image=self.img_forward,
-            command=self.forward
+            command=lambda : [self.changePage(self.forward_frame), self.change_frame_flag("F"), self.forward]
         )
         #貼り付け
         self.button_forward.place(
@@ -186,7 +186,7 @@ class MyApp(tk.Tk):
         self.button_cw = tk.Button(
             self.stop_forward_frame,
             image=self.img_cw,
-            command=self.cw
+            command=lambda : [self.changePage(self.forward_frame), self.change_frame_flag("F"), self.cw]
         )
         #貼り付け
         self.button_cw.place(
@@ -201,7 +201,7 @@ class MyApp(tk.Tk):
         self.button_ccw = tk.Button(
             self.stop_forward_frame,
             image=self.img_ccw,
-            command=self.ccw
+            command=lambda : [self.changePage(self.forward_frame), self.change_frame_flag("F"), self.ccw]
         )
         #貼り付け
         self.button_ccw.place(
@@ -215,7 +215,7 @@ class MyApp(tk.Tk):
         self.button_change_back_frame = tk.Button(
             self.stop_forward_frame,
             image=self.img_change_back,
-            command=lambda : [self.changePage(self.stop_back_frame), self.change_frame_flag("B")]
+            command=lambda : [self.changePage(self.stop_back_frame), self.change_frame_flag("S_B")]
         )
         #貼り付け
         self.button_change_back_frame.place(
@@ -279,7 +279,7 @@ class MyApp(tk.Tk):
         self.button_stop = tk.Button(
             self.back_frame,
             image=self.img_stop,
-            #command=self.stop
+            command=lambda : [self.changePage(self.stop_back_frame), self.change_frame_flag("S_B"), self.stop]
         )
         #貼り付け
         self.button_stop.place(
@@ -336,14 +336,14 @@ class MyApp(tk.Tk):
 
         ###ボタン設置###
 
-        #前進ボタン
-        self.button_forward = tk.Button(
+        #後進ボタン
+        self.button_back = tk.Button(
             self.stop_back_frame,
-            image=self.img_forward,
-            command=self.forward
+            image=self.img_back,
+            command=lambda : [self.changePage(self.back_frame), self.change_frame_flag("B"), self.back]
         )
         #貼り付け
-        self.button_forward.place(
+        self.button_back.place(
             x = 637,
             y = 50,
             anchor=tk.CENTER
@@ -353,7 +353,7 @@ class MyApp(tk.Tk):
         self.button_cw = tk.Button(
             self.stop_back_frame,
             image=self.img_cw,
-            command=self.cw
+            command=lambda : [self.changePage(self.back_frame), self.change_frame_flag("B"), self.cw]
         )
         #貼り付け
         self.button_cw.place(
@@ -368,7 +368,7 @@ class MyApp(tk.Tk):
         self.button_ccw = tk.Button(
             self.stop_back_frame,
             image=self.img_ccw,
-            command=self.ccw
+            command=lambda : [self.changePage(self.back_frame), self.change_frame_flag("B"), self.ccw]
         )
         #貼り付け
         self.button_ccw.place(
@@ -383,7 +383,7 @@ class MyApp(tk.Tk):
         self.button_change_forward_frame = tk.Button(
             self.stop_back_frame,
             image=self.img_change_forward,
-            command=lambda : [self.changePage(self.stop_forward_frame), self.change_frame_flag("F")]
+            command=lambda : [self.changePage(self.stop_forward_frame), self.change_frame_flag("S_F")]
         )
         #貼り付け
         self.button_change_forward_frame.place(
@@ -447,10 +447,12 @@ class MyApp(tk.Tk):
             #画像描画
             if self.flag == 'F':
                 self.cvs_forward.create_image(0,0,anchor='nw',image=self.bg)
-            elif self.flag == 'S':
-                self.cvs_stop.create_image(0,0,anchor='nw',image=self.bg)
+            elif self.flag == 'S_F':
+                self.cvs_stop_forward.create_image(0,0,anchor='nw',image=self.bg)
             elif self.flag == 'B':
-                self.cvs_back.create_image(0,0,anchor='nw',image=self.bg)            
+                self.cvs_back.create_image(0,0,anchor='nw',image=self.bg)
+            elif self.flag == 'S_B':
+                self.cvs_stop_back.create_image(0,0,anchor='nw',image=self.bg)                   
             
             #キューのタスクが完了したことをキューに教える
             q.task_done()
@@ -502,17 +504,9 @@ class MyApp(tk.Tk):
     def ccw(self):
         print("左旋回")
         self.control("a")
-    #前方走行時のボタンstop
-    def stop_forward(self):
+    #ボタンstop
+    def stop(self):
         print("停止")
-        self.changePage(self.stop_forward_frame)
-        self.flag = 'S'
-        self.control("s")
-    #後方走行時のボタンstop
-    def stop_back(self):
-        print("停止")
-        self.changePage(self.stop_back_frame)
-        self.flag = 'S'
         self.control("s")
     #ボタンback
     def back(self):
@@ -550,9 +544,9 @@ def receive_img_data():
             udp.connect(('192.168.11.26', 9999))
 
             #前方か後方どっちのカメラ映像を取得したいのかをラズパイに伝える
-            if img_flag == 'F':
+            if img_flag == 'F' or 'S_F':
                 udp.send(('F').encode("utf-8"))
-            elif img_flag == 'B':
+            elif img_flag == 'B' or 'S_B':
                 udp.send(('B').encode("utf-8"))
 
             #画像データ受信用の変数を用意

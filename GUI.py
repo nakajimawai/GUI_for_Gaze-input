@@ -12,7 +12,7 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 #受信する画像データをスレッド間で共有するためのキュー
 q = queue.Queue()
 #前方カメラか後方カメラ、どちらを受け取る画像データにするか判断するための変数（F：前方、B：後方）
-img_flag = 'F'
+img_flag = 'S_F'
 
 class MyApp(tk.Tk):
     
@@ -32,7 +32,7 @@ class MyApp(tk.Tk):
         self.grid_columnconfigure(0, weight=1)
 
         #フレームごとで映像を表示するためのフラグ
-        self.flag = 'S'
+        self.flag = 'S_F'
 
 #-----------------------------forward_frame------------------------------
 
@@ -86,7 +86,7 @@ class MyApp(tk.Tk):
         self.button_stop = tk.Button(
             self.forward_frame,
             image=self.img_stop,
-            command=lambda : [self.changePage(self.stop_forward_frame), self.change_frame_flag("S_F"), self.stop]
+            command=lambda : [self.changePage(self.stop_forward_frame), self.change_frame_flag("S_F"), self.stop()]
         )
         #貼り付け
         self.button_stop.place(
@@ -173,7 +173,7 @@ class MyApp(tk.Tk):
         self.button_forward = tk.Button(
             self.stop_forward_frame,
             image=self.img_forward,
-            command=lambda : [self.changePage(self.forward_frame), self.change_frame_flag("F"), self.forward]
+            command=lambda : [self.changePage(self.forward_frame), self.change_frame_flag("F"), self.forward()]
         )
         #貼り付け
         self.button_forward.place(
@@ -186,7 +186,7 @@ class MyApp(tk.Tk):
         self.button_cw = tk.Button(
             self.stop_forward_frame,
             image=self.img_cw,
-            command=lambda : [self.changePage(self.forward_frame), self.change_frame_flag("F"), self.cw]
+            command=lambda : [self.changePage(self.forward_frame), self.change_frame_flag("F"), self.cw()]
         )
         #貼り付け
         self.button_cw.place(
@@ -201,7 +201,7 @@ class MyApp(tk.Tk):
         self.button_ccw = tk.Button(
             self.stop_forward_frame,
             image=self.img_ccw,
-            command=lambda : [self.changePage(self.forward_frame), self.change_frame_flag("F"), self.ccw]
+            command=lambda : [self.changePage(self.forward_frame), self.change_frame_flag("F"), self.ccw()]
         )
         #貼り付け
         self.button_ccw.place(
@@ -279,7 +279,7 @@ class MyApp(tk.Tk):
         self.button_stop = tk.Button(
             self.back_frame,
             image=self.img_stop,
-            command=lambda : [self.changePage(self.stop_back_frame), self.change_frame_flag("S_B"), self.stop]
+            command=lambda : [self.changePage(self.stop_back_frame), self.change_frame_flag("S_B"), self.stop()]
         )
         #貼り付け
         self.button_stop.place(
@@ -340,7 +340,7 @@ class MyApp(tk.Tk):
         self.button_back = tk.Button(
             self.stop_back_frame,
             image=self.img_back,
-            command=lambda : [self.changePage(self.back_frame), self.change_frame_flag("B"), self.back]
+            command=lambda : [self.changePage(self.back_frame), self.change_frame_flag("B"), self.back()]
         )
         #貼り付け
         self.button_back.place(
@@ -353,7 +353,7 @@ class MyApp(tk.Tk):
         self.button_cw = tk.Button(
             self.stop_back_frame,
             image=self.img_cw,
-            command=lambda : [self.changePage(self.back_frame), self.change_frame_flag("B"), self.cw]
+            command=lambda : [self.changePage(self.back_frame), self.change_frame_flag("B"), self.cw()]
         )
         #貼り付け
         self.button_cw.place(
@@ -368,7 +368,7 @@ class MyApp(tk.Tk):
         self.button_ccw = tk.Button(
             self.stop_back_frame,
             image=self.img_ccw,
-            command=lambda : [self.changePage(self.back_frame), self.change_frame_flag("B"), self.ccw]
+            command=lambda : [self.changePage(self.back_frame), self.change_frame_flag("B"), self.ccw()]
         )
         #貼り付け
         self.button_ccw.place(
@@ -410,7 +410,7 @@ class MyApp(tk.Tk):
 #--------------------------------------------------------------------------------------------------------
 
         #停止画面を最前面で表示
-        self.forward_frame.tkraise()
+        self.stop_forward_frame.tkraise()
         
                    
     '''1フレーム分のデータを受け取って表示する'''
@@ -544,9 +544,13 @@ def receive_img_data():
             udp.connect(('192.168.11.26', 9999))
 
             #前方か後方どっちのカメラ映像を取得したいのかをラズパイに伝える
-            if img_flag == 'F' or 'S_F':
+            if img_flag == 'F':
                 udp.send(('F').encode("utf-8"))
-            elif img_flag == 'B' or 'S_B':
+            elif img_flag == 'S_F':
+                udp.send(('F').encode("utf-8"))
+            elif img_flag == 'B':
+                udp.send(('B').encode("utf-8"))
+            elif img_flag == 'S_B':
                 udp.send(('B').encode("utf-8"))
 
             #画像データ受信用の変数を用意
@@ -588,7 +592,7 @@ if __name__ == "__main__":
     
     thread1 = threading.Thread(target=receive_img_data)
     thread1.start()
-    #root.disp_image()
+    root.disp_image()
     root.mainloop()
 
 

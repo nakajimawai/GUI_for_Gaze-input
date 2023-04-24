@@ -12,7 +12,7 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 #受信する画像データをスレッド間で共有するためのキュー
 q = queue.Queue()
 #前方カメラか後方カメラ、どちらを受け取る画像データにするか判断するための変数（F：前方、B：後方）
-img_flag = 'S_F'
+img_flag = 'M_F'
 
 class MyApp(tk.Tk):
     
@@ -32,7 +32,62 @@ class MyApp(tk.Tk):
         self.grid_columnconfigure(0, weight=1)
 
         #フレームごとで映像を表示するためのフラグ
-        self.flag = 'S_F'
+        self.flag = 'M_F'
+#-----------------------------menu_frame------------------------------
+
+        #前方画面フレーム作成
+        self.menu_frame = ttk.Frame()
+        self.menu_frame.grid(row=0, column=0, sticky="nsew")
+
+        ###背景画像用のキャンバス###
+        self.cvs_menu = tk.Canvas(self.menu_frame,width=1275,height=765)
+        self.cvs_menu.place(
+            relx=0,
+            rely=0,
+            bordermode=tk.OUTSIDE
+        )
+
+        ###シンボル作成###
+        #走行開始シンボル
+        self.img_start = Image.open('start.png')
+        self.img_start = self.img_start.resize((250, 150))
+        self.img_start = ImageTk.PhotoImage(self.img_start)
+
+        #終了シンボル
+        self.img_finish = Image.open('finish_letter.png')
+        self.img_finish = self.img_finish.resize((150, 100))
+        self.img_finish = ImageTk.PhotoImage(self.img_finish) 
+
+        #走行開始ボタン
+        self.button_start = tk.Button(
+            self.menu_frame,
+            image=self.img_start,
+            command= self.start_running
+        )
+        #貼り付け
+        self.button_start.place(
+            x = 637,
+            y = 280,
+            width=240,
+            height=145,
+            anchor=tk.CENTER
+        )
+
+        #終了ボタン
+        self.button_finish = tk.Button(
+            self.menu_frame,
+            image=self.img_finish,
+            command=self.Finish
+        )
+        #貼り付け
+        self.button_finish.place(
+            x = 1195,
+            y = 720,
+            width=150,
+            height=110,
+            anchor=tk.CENTER
+        )
+
 
 #-----------------------------forward_frame------------------------------
 
@@ -149,26 +204,13 @@ class MyApp(tk.Tk):
         self.img_change_back = Image.open('change_back.png')
         self.img_change_back = self.img_change_back.resize((200, 100))
         self.img_change_back = ImageTk.PhotoImage(self.img_change_back)
-        #終了シンボル
-        self.img_finish = Image.open('finish_letter.png')
-        self.img_finish = self.img_finish.resize((150, 100))
-        self.img_finish = ImageTk.PhotoImage(self.img_finish)
+        #メニューへの画面遷移シンボル
+        self.img_menu = Image.open('menu.png')
+        self.img_menu = self.img_menu.resize((200, 100))
+        self.img_menu = ImageTk.PhotoImage(self.img_menu)
 
         ###ボタン設置###
-        '''
-        #前方画面に遷移するボタン
-        self.button_change_forward_frame = tk.Button(
-            self.stop_frame,
-            image=self.img_change_forward,
-            command=lambda : [self.changePage(self.forward_frame), self.change_frame_flag("F")]
-        )
-        #貼り付け
-        self.button_change_forward_frame.place(
-            x = 300,
-            y = 382,
-            anchor=tk.CENTER
-        )
-        '''
+
         #前進ボタン
         self.button_forward = tk.Button(
             self.stop_forward_frame,
@@ -223,22 +265,21 @@ class MyApp(tk.Tk):
             y = 682,
             anchor=tk.CENTER
         )
-        '''
-        #終了ボタン
-        self.button_finish = tk.Button(
-            self.stop_frame,
-            image=self.img_finish,
-            command=self.Finish
+        #メニューへのボタン
+        self.button_menu = tk.Button(
+            self.stop_forward_frame,
+            image=self.img_menu,
+            command=lambda : [self.changePage(self.menu_frame), self.change_frame_flag("M_F")]
         )
         #貼り付け
-        self.button_finish.place(
-            x = 80,
-            y = 720,
-            width=150,
-            height=110,
+        self.button_menu.place(
+            x = 110,
+            y = 682,
+            width=190,
+            height=100,
             anchor=tk.CENTER
         )
-        '''
+
 #--------------------------------------------------------------------------------------------------------
 #------------------------------------back_frame---------------------------------------------------------
         #後方画面フレーム作成
@@ -391,26 +432,24 @@ class MyApp(tk.Tk):
             y = 682,
             anchor=tk.CENTER
         )
-        '''
-        #終了ボタン
-        self.button_finish = tk.Button(
-            self.stop_frame,
-            image=self.img_finish,
-            command=self.Finish
+        #メニューへのボタン
+        self.button_menu = tk.Button(
+            self.stop_back_frame,
+            image=self.img_menu,
+            command=lambda : [self.changePage(self.menu_frame), self.change_frame_flag("M_B")]
         )
         #貼り付け
-        self.button_finish.place(
-            x = 80,
-            y = 720,
-            width=150,
-            height=110,
+        self.button_menu.place(
+            x = 110,
+            y = 682,
+            width=190,
+            height=100,
             anchor=tk.CENTER
         )
-        '''
 #--------------------------------------------------------------------------------------------------------
 
-        #停止画面を最前面で表示
-        self.stop_forward_frame.tkraise()
+        #メニュー画面を最前面で表示
+        self.menu_frame.tkraise()
         
                    
     '''1フレーム分のデータを受け取って表示する'''
@@ -452,7 +491,11 @@ class MyApp(tk.Tk):
             elif self.flag == 'B':
                 self.cvs_back.create_image(0,0,anchor='nw',image=self.bg)
             elif self.flag == 'S_B':
-                self.cvs_stop_back.create_image(0,0,anchor='nw',image=self.bg)                   
+                self.cvs_stop_back.create_image(0,0,anchor='nw',image=self.bg)         
+            elif self.flag == 'M_F':
+                self.cvs_menu.create_image(0,0,anchor='nw',image=self.bg)
+            elif self.flag == 'M_B':
+                self.cvs_menu.create_image(0,0,anchor='nw',image=self.bg)          
             
             #キューのタスクが完了したことをキューに教える
             q.task_done()
@@ -512,6 +555,16 @@ class MyApp(tk.Tk):
     def back(self):
         print("後進")
         self.control("x")
+    #ボタン走行開始
+    '''後方走行時 → メニュー画面 → 走行開始 を選んだ場合も後方カメラ映像を映すため'''
+    def start_running(self):
+        print("走行開始")
+        if self.flag == "M_F":
+            self.stop_forward_frame.tkraise()
+            self.change_frame_flag("S_F")
+        elif self.flag == "M_B":
+            self.stop_back_frame.tkraise()
+            self.change_frame_flag("S_B")
 
     '''フレームごとで映像を表示し続けるために、フラグを変更する関数'''
     def change_frame_flag(self, frame_flag):
@@ -551,6 +604,10 @@ def receive_img_data():
             elif img_flag == 'B':
                 udp.send(('B').encode("utf-8"))
             elif img_flag == 'S_B':
+                udp.send(('B').encode("utf-8"))
+            elif img_flag == 'M_F':
+                udp.send(('F').encode("utf-8"))
+            elif img_flag == 'M_B':
                 udp.send(('B').encode("utf-8"))
 
             #画像データ受信用の変数を用意

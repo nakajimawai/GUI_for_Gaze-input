@@ -11,8 +11,10 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 
 #受信する画像データをスレッド間で共有するためのキュー
 q = queue.Queue()
-#前方カメラか後方カメラ、どちらを受け取る画像データにするか判断するための変数（F：前方、B：後方）
+#前方カメラか後方カメラ、どちらを受け取る画像データにするか判断するための変数（F：前方、B：後方、M：Menu、S：停止中）
 img_flag = 'M_F'
+#どの方向に障害物が有るか無いかを示すための変数（O：障害物あり、V：障害物なし）
+laser_flag = 'F_V'
 
 class MyApp(tk.Tk):
     
@@ -559,6 +561,7 @@ class MyApp(tk.Tk):
     '''後方走行時 → メニュー画面 → 走行開始 を選んだ場合も後方カメラ映像を映すため'''
     def start_running(self):
         print("走行開始")
+        self.control("run")
         if self.flag == "M_F":
             self.stop_forward_frame.tkraise()
             self.change_frame_flag("S_F")
@@ -580,9 +583,29 @@ class MyApp(tk.Tk):
 
     '''終了の関数'''
     def Finish(self):
+        self.control("fin")
         #destroy()クラスメソッドでtkinterウィンドウを閉じる
         self.destroy()
         #sys.exit()
+    
+    '''周辺障害物の情報を受け取る関数'''
+def receive_laser_data():
+    while True:
+        HOST = '0.0.0.0'
+        PORT = 50000
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind((HOST, PORT))
+            s.listen(1)  # 接続の待ち受け
+            print('Waiting for connection...')
+            s.settimeout(100)
+            conn, addr = s.accept()  # 接続されるまで待機
+            with conn:
+                print('Connected by', addr)
+                while True:
+                    data = conn.recv(1024)  # データの受信
+                    print(data)
+                    if not data:
+                        break
 
 
 
@@ -649,7 +672,9 @@ if __name__ == "__main__":
     
     thread1 = threading.Thread(target=receive_img_data)
     thread1.start()
-    root.disp_image()
+    thread2 = threading.Thread(target=receive_laser_data)
+    thread2.start()
+    #root.disp_image()
     root.mainloop()
 
 

@@ -13,8 +13,6 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 q = queue.Queue()
 #前方カメラか後方カメラ、どちらを受け取る画像データにするか判断するための変数（F：前方、B：後方、M：Menu、S：停止中）
 img_flag = 'M_F'
-#どの方向に障害物が有るか無いかを示すための変数（O：障害物あり、V：障害物なし）
-laser_flag = 'F_V'
 
 class MyApp(tk.Tk):
     
@@ -35,6 +33,7 @@ class MyApp(tk.Tk):
 
         #フレームごとで映像を表示するためのフラグ
         self.flag = 'M_F'
+        
 #-----------------------------menu_frame------------------------------
 
         #前方画面フレーム作成
@@ -122,6 +121,10 @@ class MyApp(tk.Tk):
         self.img_ccw = Image.open('ccw_3d.png')
         self.img_ccw = self.img_ccw.resize((150, 200))
         self.img_ccw = ImageTk.PhotoImage(self.img_ccw)
+        #前進ロックシンボル
+        self.img_forward_lock = Image.open('forward_3d_lock.png')
+        self.img_forward_lock = self.img_forward_lock.resize((200, 100))
+        self.img_forward_lock = ImageTk.PhotoImage(self.img_forward_lock)
 
         ######
 
@@ -214,13 +217,13 @@ class MyApp(tk.Tk):
         ###ボタン設置###
 
         #前進ボタン
-        self.button_forward = tk.Button(
+        self.button_stop_forward = tk.Button(
             self.stop_forward_frame,
             image=self.img_forward,
             command=lambda : [self.changePage(self.forward_frame), self.change_frame_flag("F"), self.forward()]
         )
         #貼り付け
-        self.button_forward.place(
+        self.button_stop_forward.place(
             x = 637,
             y = 50,
             anchor=tk.CENTER
@@ -279,6 +282,17 @@ class MyApp(tk.Tk):
             y = 682,
             width=190,
             height=100,
+            anchor=tk.CENTER
+        )
+        #前進ロック旋回ボタン
+        self.button_forward_lock = tk.Button(
+            self.stop_forward_frame,
+            image=self.img_forward_lock,
+        )
+        #貼り付け
+        self.button_forward_lock.place(
+            x = 637,
+            y = 50,
             anchor=tk.CENTER
         )
 
@@ -587,9 +601,33 @@ class MyApp(tk.Tk):
         #destroy()クラスメソッドでtkinterウィンドウを閉じる
         self.destroy()
         #sys.exit()
-    
+
+    '''ボタンロック用の関数'''
+    def lock_button(self, laser_msg):
+        print(laser_msg)
+        if laser_msg == b'F_O':
+            #ボタン変更
+            self.button_stop_forward.place_forget()
+            #貼り付け
+            self.button_forward_lock.place(
+                x = 637,
+                y = 50,
+                anchor=tk.CENTER
+            )
+        elif laser_msg == b'F_V':
+            #ボタン変更
+            self.button_forward_lock.place_forget()
+            
+            #貼り付け
+            self.button_stop_forward.place(
+                x = 637,
+                y = 50,
+                anchor=tk.CENTER
+            )
+            
     '''周辺障害物の情報を受け取る関数'''
 def receive_laser_data():
+    global laser_flag
     while True:
         HOST = '0.0.0.0'
         PORT = 50000
@@ -600,10 +638,10 @@ def receive_laser_data():
             s.settimeout(100)
             conn, addr = s.accept()  # 接続されるまで待機
             with conn:
-                print('Connected by', addr)
+                #print('Connected by', addr)
                 while True:
                     data = conn.recv(1024)  # データの受信
-                    print(data)
+                    root.lock_button(data)
                     if not data:
                         break
 

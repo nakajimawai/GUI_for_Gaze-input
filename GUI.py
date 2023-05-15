@@ -89,7 +89,57 @@ class MyApp(tk.Tk):
             anchor=tk.CENTER
         )
 
+#------------------------------------------------------------------------
+#-----------------------------menu_back_frame------------------------------
 
+        #後方メニューフレーム作成
+        self.menu_back_frame = ttk.Frame()
+        self.menu_back_frame.grid(row=0, column=0, sticky="nsew")
+
+        ###背景画像用のキャンバス###
+        self.cvs_menu_back = tk.Canvas(self.menu_back_frame,width=1275,height=765)
+        self.cvs_menu_back.place(
+            relx=0,
+            rely=0,
+            bordermode=tk.OUTSIDE
+        )
+
+        ###シンボル作成###
+
+        #後方の走行開始シンボル
+        self.img_start_back = Image.open('start_back.png')
+        self.img_start_back = self.img_start_back.resize((250, 150))
+        self.img_start_back = ImageTk.PhotoImage(self.img_start_back)
+
+        #後方の走行開始ボタン
+        self.button_start_back = tk.Button(
+            self.menu_back_frame,
+            image=self.img_start_back,
+            command= self.start_running
+        )
+        #貼り付け
+        self.button_start_back.place(
+            x = 637,
+            y = 280,
+            width=240,
+            height=145,
+            anchor=tk.CENTER
+        )
+
+        #終了ボタン
+        self.button_finish = tk.Button(
+            self.menu_back_frame,
+            image=self.img_finish,
+            command=self.Finish
+        )
+        #貼り付け
+        self.button_finish.place(
+            x = 1195,
+            y = 720,
+            width=150,
+            height=110,
+            anchor=tk.CENTER
+        )
 #-----------------------------forward_frame------------------------------
 
         #前方画面フレーム作成
@@ -448,11 +498,11 @@ class MyApp(tk.Tk):
             y = 682,
             anchor=tk.CENTER
         )
-        #メニューへのボタン
+        #後方メニューへのボタン
         self.button_menu = tk.Button(
             self.stop_back_frame,
             image=self.img_menu,
-            command=lambda : [self.changePage(self.menu_frame), self.change_frame_flag("M_B")]
+            command=lambda : [self.changePage(self.menu_back_frame), self.change_frame_flag("M_B")]
         )
         #貼り付け
         self.button_menu.place(
@@ -511,7 +561,7 @@ class MyApp(tk.Tk):
             elif self.flag == 'M_F':
                 self.cvs_menu.create_image(0,0,anchor='nw',image=self.bg)
             elif self.flag == 'M_B':
-                self.cvs_menu.create_image(0,0,anchor='nw',image=self.bg)          
+                self.cvs_menu_back.create_image(0,0,anchor='nw',image=self.bg)          
             
             #キューのタスクが完了したことをキューに教える
             q.task_done()
@@ -712,7 +762,7 @@ if __name__ == "__main__":
     thread1.start()
     thread2 = threading.Thread(target=receive_laser_data)
     thread2.start()
-    #root.disp_image()
+    root.disp_image()
     root.mainloop()
 
 

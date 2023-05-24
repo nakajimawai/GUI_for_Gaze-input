@@ -11,8 +11,12 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 
 #受信する画像データをスレッド間で共有するためのキュー
 q = queue.Queue()
+
+msg_q = queue.Queue()
 #前方カメラか後方カメラ、どちらを受け取る画像データにするか判断するための変数（F：前方、B：後方、M：Menu、S：停止中）
 img_flag = 'M_F'
+
+time_start = 0
 
 class MyApp(tk.Tk):
     
@@ -33,6 +37,8 @@ class MyApp(tk.Tk):
 
         #フレームごとで映像を表示するためのフラグ
         self.flag = 'M_F'
+
+        self.str = 'first'
         
 #-----------------------------menu_frame------------------------------
 
@@ -653,31 +659,44 @@ class MyApp(tk.Tk):
         #sys.exit()
 
     '''ボタンロック用の関数'''
-    def lock_button(self, laser_msg):
-        print(laser_msg)
-        if laser_msg == b'F_O':
-            #ボタン変更
-            self.button_stop_forward.place_forget()
-            #貼り付け
-            self.button_forward_lock.place(
-                x = 637,
-                y = 50,
-                anchor=tk.CENTER
-            )
-        elif laser_msg == b'F_V':
-            #ボタン変更
-            self.button_forward_lock.place_forget()
-            
-            #貼り付け
-            self.button_stop_forward.place(
-                x = 637,
-                y = 50,
-                anchor=tk.CENTER
-            )
+    def lock_button(self):
+        global time_start
+
+        if not msg_q.empty():
+            laser_msg = msg_q.get(block=True, timeout=True)
+            print(laser_msg)
+            self.str = laser_msg
+            if laser_msg == b'F_O':
+                #ボタン変更
+                self.button_stop_forward.place_forget()
+                #貼り付け
+                self.button_forward_lock.place(
+                    x = 637,
+                    y = 50,
+                    anchor=tk.CENTER
+                )
+                #msg_q.task_done
+            elif laser_msg == b'F_V':
+                #ボタン変更
+                self.button_forward_lock.place_forget()
+                
+                #貼り付け
+                self.button_stop_forward.place(
+                    x = 637,
+                    y = 50,
+                    anchor=tk.CENTER
+                )
+
+            time_end = time.time()
+            exe_time = time_end - time_start
+            print("処理時間: {:.10f} seconds".format(exe_time))
+
+            msg_q.task_done()
+        self.after(10, self.lock_button)
             
     '''周辺障害物の情報を受け取る関数'''
 def receive_laser_data():
-    global laser_flag
+    global time_start
     while True:
         HOST = '0.0.0.0'
         PORT = 50000
@@ -687,13 +706,10 @@ def receive_laser_data():
             print('Waiting for connection...')
             s.settimeout(100)
             conn, addr = s.accept()  # 接続されるまで待機
-            with conn:
-                #print('Connected by', addr)
-                while True:
-                    data = conn.recv(1024)  # データの受信
-                    root.lock_button(data)
-                    if not data:
-                        break
+            data = conn.recv(1024)  # データの受信
+            time_start = time.time()
+            msg_q.put(data)
+            msg_q.join()
 
 
 
@@ -763,6 +779,7 @@ if __name__ == "__main__":
     thread2 = threading.Thread(target=receive_laser_data)
     thread2.start()
     root.disp_image()
+    root.lock_button()
     root.mainloop()
 
 

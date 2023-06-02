@@ -9,12 +9,12 @@ import threading, multiprocessing, queue
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 #Set server ip address, port, buffer capacity
 
-#受信する画像データをスレッド間で共有するためのキュー
-q = queue.Queue()
+q = queue.Queue()       #受信する画像データをスレッド間で共有するためのキュー
 
-msg_q = queue.Queue()
-#前方カメラか後方カメラ、どちらを受け取る画像データにするか判断するための変数（F：前方、B：後方、M：Menu、S：停止中）
-img_flag = 'M_F'
+msg_q = queue.Queue()   #障害物情報を保持するキュー
+#str_q = queue.Queue()   #画面遷移時に障害物情報を用いるときのキュー
+
+img_flag = 'M_F'   #前方カメラか後方カメラ、どちらを受け取る画像データにするか判断するための変数（F：前方、B：後方、M：Menu、S：停止中）
 
 time_start = 0
 
@@ -35,10 +35,11 @@ class MyApp(tk.Tk):
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
-        #フレームごとで映像を表示するためのフラグ
-        self.flag = 'M_F'
+        self.flag = 'M_F'   #フレームごとで映像を表示するためのフラグ
 
-        self.str = 'first'
+        self.str = ['first', 'first', 'first', 'first']   #前回の障害物情報
+
+        self.arg = False   #画面遷移したかどうか
         
 #-----------------------------menu_frame------------------------------
 
@@ -292,14 +293,14 @@ class MyApp(tk.Tk):
             anchor=tk.CENTER
         )
 
-        #停止画面のcw旋回ボタン
-        self.button_stop_cw = tk.Button(
+        #前方停止画面のcw旋回ボタン
+        self.button_stop_f_cw = tk.Button(
             self.stop_forward_frame,
             image=self.img_cw,
             command=lambda : [self.changePage(self.forward_frame), self.change_frame_flag("F"), self.cw()]
         )
         #貼り付け
-        self.button_stop_cw.place(
+        self.button_stop_f_cw.place(
             x = 1185,
             y = 382,
             width=150,
@@ -307,14 +308,14 @@ class MyApp(tk.Tk):
             anchor=tk.CENTER
         )
 
-        #停止画面のccw旋回ボタン
-        self.button_stop_ccw = tk.Button(
+        #前方停止画面のccw旋回ボタン
+        self.button_stop_f_ccw = tk.Button(
             self.stop_forward_frame,
             image=self.img_ccw,
             command=lambda : [self.changePage(self.forward_frame), self.change_frame_flag("F"), self.ccw()]
         )
         #貼り付け
-        self.button_ccw.place(
+        self.button_stop_f_ccw.place(
             x = 67,
             y = 382,
             width=150,
@@ -328,36 +329,19 @@ class MyApp(tk.Tk):
             self.stop_forward_frame,
             image=self.img_forward_lock,
         )
-        #貼り付け
-        self.button_stop_forward_lock.place(
-            x = 637,
-            y = 50,
-            anchor=tk.CENTER
-        )
 
-        #停止画面のcw旋回ロックボタン
-        self.button_stop_cw_lock = tk.Button(
+        #前方停止画面のcw旋回ロックボタン
+        self.button_stop_f_cw_lock = tk.Button(
             self.stop_forward_frame,
             image=self.img_cw_lock,
         )
-        #貼り付け
-        self.button_stop_cw_lock.place(
-            x = 1185,
-            y = 382,
-            anchor=tk.CENTER
-        )
 
-        #停止画面のccw旋回ロックボタン
-        self.button_stop_ccw_lock = tk.Button(
+        #前方停止画面のccw旋回ロックボタン
+        self.button_stop_f_ccw_lock = tk.Button(
             self.stop_forward_frame,
             image=self.img_ccw_lock,
         )
-        #貼り付け
-        self.button_stop_ccw_lock.place(
-            x = 67,
-            y = 382,
-            anchor=tk.CENTER
-        )
+
         ''''''
         '''ロボット操作以外のボタン'''
         #後方画面に遷移するボタン
@@ -486,28 +470,28 @@ class MyApp(tk.Tk):
 
 
         ###ボタン設置###
-
-        #後進ボタン
-        self.button_back = tk.Button(
+        '''ロボット操作ボタン'''
+        #停止中の後進ボタン
+        self.button_stop_back = tk.Button(
             self.stop_back_frame,
             image=self.img_back,
             command=lambda : [self.changePage(self.back_frame), self.change_frame_flag("B"), self.back()]
         )
         #貼り付け
-        self.button_back.place(
+        self.button_stop_back.place(
             x = 637,
             y = 50,
             anchor=tk.CENTER
         )
 
-        #cw旋回ボタン
-        self.button_cw = tk.Button(
+        #後方停止画面のcw旋回ボタン
+        self.button_stop_b_cw = tk.Button(
             self.stop_back_frame,
             image=self.img_cw,
             command=lambda : [self.changePage(self.back_frame), self.change_frame_flag("B"), self.cw()]
         )
         #貼り付け
-        self.button_cw.place(
+        self.button_stop_b_cw.place(
             x = 1185,
             y = 382,
             width=150,
@@ -515,21 +499,41 @@ class MyApp(tk.Tk):
             anchor=tk.CENTER
         )
 
-        #ccw旋回ボタン
-        self.button_ccw = tk.Button(
+        #前方停止画面のccw旋回ボタン
+        self.button_stop_b_ccw = tk.Button(
             self.stop_back_frame,
             image=self.img_ccw,
             command=lambda : [self.changePage(self.back_frame), self.change_frame_flag("B"), self.ccw()]
         )
         #貼り付け
-        self.button_ccw.place(
+        self.button_stop_b_ccw.place(
             x = 67,
             y = 382,
             width=150,
             height=200,
             anchor=tk.CENTER
         )
+        ''''''
+        '''ロックボタン'''
+        #停止画面の後退ロックボタン
+        self.button_stop_back_lock = tk.Button(
+            self.stop_back_frame,
+            image=self.img_back_lock,
+        )
 
+        #後方停止画面のcw旋回ロックボタン
+        self.button_stop_b_cw_lock = tk.Button(
+            self.stop_back_frame,
+            image=self.img_cw_lock,
+        )
+
+        #後方停止画面のccw旋回ロックボタン
+        self.button_stop_b_ccw_lock = tk.Button(
+            self.stop_back_frame,
+            image=self.img_ccw_lock,
+        )
+        ''''''
+        '''ロボット操作以外のボタン'''
         #前方停止画面に遷移するボタン
         self.button_change_forward_frame = tk.Button(
             self.stop_back_frame,
@@ -556,6 +560,7 @@ class MyApp(tk.Tk):
             height=100,
             anchor=tk.CENTER
         )
+        ''''''
 #--------------------------------------------------------------------------------------------------------
 
         #メニュー画面を最前面で表示
@@ -686,8 +691,9 @@ class MyApp(tk.Tk):
 
     '''画面遷移用の関数'''
     def changePage(self, page):
-        #指定のフレームを最前面に移動
-        page.tkraise()
+        #self.lock_button(True)   #ボタンを遷移後の画面でもロック・アンロックできるように引数はTrue
+        self.arg = True
+        page.tkraise()   #指定のフレームを最前面に移動
 
     '''終了の関数'''
     def Finish(self):
@@ -696,13 +702,9 @@ class MyApp(tk.Tk):
         self.destroy()
         #sys.exit()
 
-    '''ボタンロック用の関数'''
-    def lock_button(self):
-        global time_start
-
-        if not msg_q.empty():
-            laser_msg = msg_q.get(block=True, timeout=True)
-            print(laser_msg)
+    '''ボタンを貼り変える関数'''
+    def delete_and_paste(self, laser_msg):
+        if self.flag == 'S_F':   #ユーザが前方停止画面を操作している時
             '''前進ボタンの処理'''
             if laser_msg[0] == 'F_O':
                 #ボタン変更
@@ -728,9 +730,9 @@ class MyApp(tk.Tk):
             '''cw旋回ボタンの処理'''
             if laser_msg[1] == 'CW_O':
                 #ボタン変更
-                self.button_stop_cw.place_forget()
+                self.button_stop_f_cw.place_forget()
                 #貼り付け
-                self.button_stop_cw_lock.place(
+                self.button_stop_f_cw_lock.place(
                     x = 1185,
                     y = 382,
                     anchor=tk.CENTER
@@ -738,9 +740,9 @@ class MyApp(tk.Tk):
                 #msg_q.task_done
             elif laser_msg[1] == 'CW_V':
                 #ボタン変更
-                self.button_stop_cw_lock.place_forget()
+                self.button_stop_f_cw_lock.place_forget()
                 #貼り付け
-                self.button_stop_cw.place(
+                self.button_stop_f_cw.place(
                     x = 1185,
                     y = 382,
                     anchor=tk.CENTER
@@ -749,9 +751,9 @@ class MyApp(tk.Tk):
             '''ccw旋回ボタンの処理'''
             if laser_msg[2] == 'CCW_O':
                 #ボタン変更
-                self.button_stop_ccw.place_forget()
+                self.button_stop_f_ccw.place_forget()
                 #貼り付け
-                self.button_stop_ccw_lock.place(
+                self.button_stop_f_ccw_lock.place(
                     x = 67,
                     y = 382,
                     anchor=tk.CENTER
@@ -759,19 +761,104 @@ class MyApp(tk.Tk):
                 #msg_q.task_done
             elif laser_msg[2] == 'CCW_V':
                 #ボタン変更
-                self.button_stop_ccw_lock.place_forget()
+                self.button_stop_f_ccw_lock.place_forget()
                 #貼り付け
-                self.button_stop_ccw.place(
+                self.button_stop_f_ccw.place(
                     x = 67,
                     y = 382,
                     anchor=tk.CENTER
                 )
             ''''''
+        elif self.flag == 'S_B':   #ユーザが後方停止画面を操作している時
+            '''後退ボタンの処理'''
+            if laser_msg[3] == 'B_O':
+                #ボタン変更
+                self.button_stop_back.place_forget()
+                #貼り付け
+                self.button_stop_back_lock.place(
+                    x = 637,
+                    y = 50,
+                    anchor=tk.CENTER
+                )
+            elif laser_msg[3] == 'B_V':
+                #ボタン変更
+                self.button_stop_back_lock.place_forget()
+                
+                #貼り付け
+                self.button_stop_back.place(
+                    x = 637,
+                    y = 50,
+                    anchor=tk.CENTER
+                )
+            ''''''
+            '''cw旋回ボタンの処理'''
+            if laser_msg[1] == 'CW_O':
+                #ボタン変更
+                self.button_stop_b_cw.place_forget()
+                #貼り付け
+                self.button_stop_b_cw_lock.place(
+                    x = 1185,
+                    y = 382,
+                    anchor=tk.CENTER
+                )
+            elif laser_msg[1] == 'CW_V':
+                #ボタン変更
+                self.button_stop_b_cw_lock.place_forget()
+                #貼り付け
+                self.button_stop_b_cw.place(
+                    x = 1185,
+                    y = 382,
+                    anchor=tk.CENTER
+                )
+            ''''''
+            '''ccw旋回ボタンの処理'''
+            if laser_msg[2] == 'CCW_O':
+                #ボタン変更
+                self.button_stop_b_ccw.place_forget()
+                #貼り付け
+                self.button_stop_b_ccw_lock.place(
+                    x = 67,
+                    y = 382,
+                    anchor=tk.CENTER
+                )
+                #msg_q.task_done
+            elif laser_msg[2] == 'CCW_V':
+                #ボタン変更
+                self.button_stop_b_ccw_lock.place_forget()
+                #貼り付け
+                self.button_stop_b_ccw.place(
+                    x = 67,
+                    y = 382,
+                    anchor=tk.CENTER
+                )
+            ''''''
+ 
+
+    '''ボタンロック・アンロック用の関数'''
+    def lock_button(self):
+        global time_start
+        #print(arg)
+        if not msg_q.empty():
+            laser_msg = msg_q.get(block=True, timeout=True)
+            print(laser_msg)
+            self.delete_and_paste(laser_msg)
+
             time_end = time.time()
             exe_time = time_end - time_start
             print("処理時間: {:.10f} seconds".format(exe_time))
 
+            self.str = laser_msg   #前回の障害物情報を保持
             msg_q.task_done()
+
+        if self.arg == True:
+            #str_laser_msg = str_q.get(block=True, timeout=True)
+            #print(str_laser_msg)
+            #print("前回：", self.str)
+            #print(self.str)
+            self.delete_and_paste(self.str)
+
+            #str_q.task_done()
+            self.arg = False
         self.after(10, self.lock_button)
             
     '''周辺障害物の情報を受け取る関数'''
@@ -792,6 +879,7 @@ def receive_laser_data():
             array = received_data.split('|')
 
             msg_q.put(array)
+            #str_q.put(array)
             msg_q.join()
 
 
@@ -847,7 +935,8 @@ def receive_img_data():
                 #キューから画像データが取り出されるまで処理をブロック
                 q.join()
             except:
-                print("Wi-Fi切断")
+                #print("Wi-Fi切断")
+                pass
 
 
 

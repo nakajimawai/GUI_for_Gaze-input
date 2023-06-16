@@ -46,6 +46,71 @@ class MyApp(tk.Tk):
         self.arg = False   #画面遷移したかどうか
 
         self.str_state = False   #衝突防止動作の実行前にロボットが動いていたかを判断する
+
+        '''シンボル画像用意'''
+        #走行開始シンボル
+        self.img_start = Image.open('start.png')
+        self.img_start = self.img_start.resize((250, 150))
+        self.img_start = ImageTk.PhotoImage(self.img_start)
+        #後方の走行開始シンボル
+        self.img_start_back = Image.open('start_back.png')
+        self.img_start_back = self.img_start_back.resize((250, 150))
+        self.img_start_back = ImageTk.PhotoImage(self.img_start_back)
+        #終了シンボル
+        self.img_finish = Image.open('finish_letter.png')
+        self.img_finish = self.img_finish.resize((150, 100))
+        self.img_finish = ImageTk.PhotoImage(self.img_finish)       
+        #前方向への画面遷移シンボル
+        self.img_change_forward = Image.open('change_forward.png')
+        self.img_change_forward = self.img_change_forward.resize((200, 100))
+        self.img_change_forward = ImageTk.PhotoImage(self.img_change_forward)
+        #後ろ方向への画面遷移シンボル
+        self.img_change_back = Image.open('change_back.png')
+        self.img_change_back = self.img_change_back.resize((200, 100))
+        self.img_change_back = ImageTk.PhotoImage(self.img_change_back)
+        #メニューへの画面遷移シンボル
+        self.img_menu = Image.open('menu.png')
+        self.img_menu = self.img_menu.resize((200, 100))
+        self.img_menu = ImageTk.PhotoImage(self.img_menu) 
+        #前進シンボル
+        self.img_forward = Image.open('forward_3d.png')
+        self.img_forward = self.img_forward.resize((200, 100))
+        self.img_forward = ImageTk.PhotoImage(self.img_forward)
+        #停止シンボル
+        self.img_stop = Image.open('stop_3d.png')
+        self.img_stop = self.img_stop.resize((200, 200))
+        self.img_stop = ImageTk.PhotoImage(self.img_stop)
+        #cw旋回シンボル
+        self.img_cw = Image.open('cw_3d.png')
+        self.img_cw = self.img_cw.resize((150, 200))
+        self.img_cw = ImageTk.PhotoImage(self.img_cw)
+        #ccwシンボル
+        self.img_ccw = Image.open('ccw_3d.png')
+        self.img_ccw = self.img_ccw.resize((150, 200))
+        self.img_ccw = ImageTk.PhotoImage(self.img_ccw)
+        ###シンボル作成###
+        #後退シンボル
+        self.img_back = Image.open('back_3d.png')
+        self.img_back = self.img_back.resize((200, 100))
+        self.img_back = ImageTk.PhotoImage(self.img_back)
+        ######
+        #前進ロックシンボル
+        self.img_forward_lock = Image.open('forward_3d_lock.png')
+        self.img_forward_lock = self.img_forward_lock.resize((200, 100))
+        self.img_forward_lock = ImageTk.PhotoImage(self.img_forward_lock)
+        #cw旋回ロックシンボル
+        self.img_cw_lock = Image.open('cw_3d_lock.png')
+        self.img_cw_lock = self.img_cw_lock.resize((150, 200))
+        self.img_cw_lock = ImageTk.PhotoImage(self.img_cw_lock)
+        #ccw旋回ロックシンボル
+        self.img_ccw_lock = Image.open('ccw_3d_lock.png')
+        self.img_ccw_lock = self.img_ccw_lock.resize((150, 200))
+        self.img_ccw_lock = ImageTk.PhotoImage(self.img_ccw_lock)
+        #後退ロックシンボル
+        self.img_back_lock = Image.open('back_3d_lock.png')
+        self.img_back_lock = self.img_back_lock.resize((200, 100))
+        self.img_back_lock = ImageTk.PhotoImage(self.img_back_lock)        
+        ######
         
 #-----------------------------menu_frame------------------------------
 
@@ -60,17 +125,6 @@ class MyApp(tk.Tk):
             rely=0,
             bordermode=tk.OUTSIDE
         )
-
-        ###シンボル作成###
-        #走行開始シンボル
-        self.img_start = Image.open('start.png')
-        self.img_start = self.img_start.resize((250, 150))
-        self.img_start = ImageTk.PhotoImage(self.img_start)
-
-        #終了シンボル
-        self.img_finish = Image.open('finish_letter.png')
-        self.img_finish = self.img_finish.resize((150, 100))
-        self.img_finish = ImageTk.PhotoImage(self.img_finish) 
 
         #走行開始ボタン
         self.button_start = tk.Button(
@@ -117,13 +171,6 @@ class MyApp(tk.Tk):
             bordermode=tk.OUTSIDE
         )
 
-        ###シンボル作成###
-
-        #後方の走行開始シンボル
-        self.img_start_back = Image.open('start_back.png')
-        self.img_start_back = self.img_start_back.resize((250, 150))
-        self.img_start_back = ImageTk.PhotoImage(self.img_start_back)
-
         #後方の走行開始ボタン
         self.button_start_back = tk.Button(
             self.menu_back_frame,
@@ -167,37 +214,6 @@ class MyApp(tk.Tk):
             bordermode=tk.OUTSIDE
         )
 
-        ###シンボル作成###
-        #前進シンボル
-        self.img_forward = Image.open('forward_3d.png')
-        self.img_forward = self.img_forward.resize((200, 100))
-        self.img_forward = ImageTk.PhotoImage(self.img_forward)
-        #停止シンボル
-        self.img_stop = Image.open('stop_3d.png')
-        self.img_stop = self.img_stop.resize((200, 200))
-        self.img_stop = ImageTk.PhotoImage(self.img_stop)
-        #cw旋回シンボル
-        self.img_cw = Image.open('cw_3d.png')
-        self.img_cw = self.img_cw.resize((150, 200))
-        self.img_cw = ImageTk.PhotoImage(self.img_cw)
-        #ccwシンボル
-        self.img_ccw = Image.open('ccw_3d.png')
-        self.img_ccw = self.img_ccw.resize((150, 200))
-        self.img_ccw = ImageTk.PhotoImage(self.img_ccw)
-        #前進ロックシンボル
-        self.img_forward_lock = Image.open('forward_3d_lock.png')
-        self.img_forward_lock = self.img_forward_lock.resize((200, 100))
-        self.img_forward_lock = ImageTk.PhotoImage(self.img_forward_lock)
-        #cw旋回ロックシンボル
-        self.img_cw_lock = Image.open('cw_3d_lock.png')
-        self.img_cw_lock = self.img_cw_lock.resize((150, 200))
-        self.img_cw_lock = ImageTk.PhotoImage(self.img_cw_lock)
-        #ccw旋回ロックシンボル
-        self.img_ccw_lock = Image.open('ccw_3d_lock.png')
-        self.img_ccw_lock = self.img_ccw_lock.resize((150, 200))
-        self.img_ccw_lock = ImageTk.PhotoImage(self.img_ccw_lock)
-        ######
-
         ###ボタン設置###
         #前進ボタン
         self.button_forward = tk.Button(
@@ -228,13 +244,13 @@ class MyApp(tk.Tk):
         )
 
         #cw旋回ボタン
-        self.button_cw = tk.Button(
+        self.button_f_cw = tk.Button(
             self.forward_frame,
             image=self.img_cw,
             command=self.cw
         )
         #貼り付け
-        self.button_cw.place(
+        self.button_f_cw.place(
             x = 1185,
             y = 382,
             width=150,
@@ -243,18 +259,36 @@ class MyApp(tk.Tk):
         )
 
         #ccw旋回ボタン
-        self.button_ccw = tk.Button(
+        self.button_f_ccw = tk.Button(
             self.forward_frame,
             image=self.img_ccw,
             command=self.ccw
         )
         #貼り付け
-        self.button_ccw.place(
+        self.button_f_ccw.place(
             x = 67,
             y = 382,
             width=150,
             height=200,
             anchor=tk.CENTER
+        )
+
+        #前方操作画面の前進ロックボタン
+        self.button_forward_lock = tk.Button(
+            self.forward_frame,
+            image=self.img_forward_lock,
+        )
+
+        #前方操作画面のcw旋回ロックボタン
+        self.button_f_cw_lock = tk.Button(
+            self.forward_frame,
+            image=self.img_cw_lock,
+        )
+
+        #前方操作画面のccw旋回ロックボタン
+        self.button_f_ccw_lock = tk.Button(
+            self.forward_frame,
+            image=self.img_ccw_lock,
         )
 #----------------------------------------------------------------------
 #-----------------------stop__forward_frame-------------------------------------
@@ -269,20 +303,6 @@ class MyApp(tk.Tk):
             rely=0,
             bordermode=tk.OUTSIDE
         )
-
-         ###シンボル作成###       
-        #前方向への画面遷移シンボル
-        self.img_change_forward = Image.open('change_forward.png')
-        self.img_change_forward = self.img_change_forward.resize((200, 100))
-        self.img_change_forward = ImageTk.PhotoImage(self.img_change_forward)
-        #後ろ方向への画面遷移シンボル
-        self.img_change_back = Image.open('change_back.png')
-        self.img_change_back = self.img_change_back.resize((200, 100))
-        self.img_change_back = ImageTk.PhotoImage(self.img_change_back)
-        #メニューへの画面遷移シンボル
-        self.img_menu = Image.open('menu.png')
-        self.img_menu = self.img_menu.resize((200, 100))
-        self.img_menu = ImageTk.PhotoImage(self.img_menu)
 
         ###ボタン設置###
         '''ロボット操作ボタン'''
@@ -391,17 +411,6 @@ class MyApp(tk.Tk):
             bordermode=tk.OUTSIDE
         )
 
-        ###シンボル作成###
-        #後退シンボル
-        self.img_back = Image.open('back_3d.png')
-        self.img_back = self.img_back.resize((200, 100))
-        self.img_back = ImageTk.PhotoImage(self.img_back)
-        #後退ロックシンボル
-        self.img_back_lock = Image.open('back_3d_lock.png')
-        self.img_back_lock = self.img_back_lock.resize((200, 100))
-        self.img_back_lock = ImageTk.PhotoImage(self.img_back_lock)
-        ######
-
         ###ボタン設置###
         #後進ボタン
         self.button_back = tk.Button(
@@ -432,13 +441,13 @@ class MyApp(tk.Tk):
         )
 
         #cw旋回ボタン
-        self.button_cw = tk.Button(
+        self.button_b_cw = tk.Button(
             self.back_frame,
             image=self.img_cw,
             command=self.cw
         )
         #貼り付け
-        self.button_cw.place(
+        self.button_b_cw.place(
             x = 1185,
             y = 382,
             width=150,
@@ -447,18 +456,36 @@ class MyApp(tk.Tk):
         )
 
         #ccw旋回ボタン
-        self.button_ccw = tk.Button(
+        self.button_b_ccw = tk.Button(
             self.back_frame,
             image=self.img_ccw,
             command=self.ccw
         )
         #貼り付け
-        self.button_ccw.place(
+        self.button_b_ccw.place(
             x = 67,
             y = 382,
             width=150,
             height=200,
             anchor=tk.CENTER
+        )
+
+        #後方操作画面の後退ロックボタン
+        self.button_back_lock = tk.Button(
+            self.back_frame,
+            image=self.img_back_lock,
+        )
+
+        #後方操作画面のcw旋回ロックボタン
+        self.button_b_cw_lock = tk.Button(
+            self.back_frame,
+            image=self.img_cw_lock,
+        )
+
+        #後方操作画面のccw旋回ロックボタン
+        self.button_b_ccw_lock = tk.Button(
+            self.back_frame,
+            image=self.img_ccw_lock,
         )
 #----------------------------------------------------------------------
 #-----------------------stop_back_frame-------------------------------------
@@ -473,7 +500,6 @@ class MyApp(tk.Tk):
             rely=0,
             bordermode=tk.OUTSIDE
         )
-
 
         ###ボタン設置###
         '''ロボット操作ボタン'''
@@ -710,7 +736,71 @@ class MyApp(tk.Tk):
 
     '''ボタンを貼り変える関数'''
     def delete_and_paste(self, laser_msg):
-        if self.flag == 'S_F':   #ユーザが前方停止画面を操作している時
+        if self.flag == 'F':   #ユーザが前方操作画面を操作している時
+            '''前進ボタンの処理'''
+            if laser_msg[0] == True:
+                #ボタン変更
+                self.button_forward.place_forget()
+                #貼り付け
+                self.button_forward_lock.place(
+                    x = 637,
+                    y = 50,
+                    anchor=tk.CENTER
+                )
+            elif laser_msg[0] == False:
+                #ボタン変更
+                self.button_forward_lock.place_forget()
+                
+                #貼り付け
+                self.button_forward.place(
+                    x = 637,
+                    y = 50,
+                    anchor=tk.CENTER
+                )
+            ''''''
+            '''cw旋回ボタンの処理'''
+            if laser_msg[1] == True:
+                #ボタン変更
+                self.button_f_cw.place_forget()
+                #貼り付け
+                self.button_f_cw_lock.place(
+                    x = 1185,
+                    y = 382,
+                    anchor=tk.CENTER
+                )
+                #msg_q.task_done
+            elif laser_msg[1] == False:
+                #ボタン変更
+                self.button_f_cw_lock.place_forget()
+                #貼り付け
+                self.button_f_cw.place(
+                    x = 1185,
+                    y = 382,
+                    anchor=tk.CENTER
+                )
+            ''''''
+            '''ccw旋回ボタンの処理'''
+            if laser_msg[2] == True:
+                #ボタン変更
+                self.button_f_ccw.place_forget()
+                #貼り付け
+                self.button_f_ccw_lock.place(
+                    x = 67,
+                    y = 382,
+                    anchor=tk.CENTER
+                )
+                #msg_q.task_done
+            elif laser_msg[2] == False:
+                #ボタン変更
+                self.button_f_ccw_lock.place_forget()
+                #貼り付け
+                self.button_f_ccw.place(
+                    x = 67,
+                    y = 382,
+                    anchor=tk.CENTER
+                )
+            ''''''
+        elif self.flag == 'S_F':   #ユーザが前方停止画面を操作している時
             '''前進ボタンの処理'''
             if laser_msg[0] == True:
                 #ボタン変更
@@ -770,6 +860,69 @@ class MyApp(tk.Tk):
                 self.button_stop_f_ccw_lock.place_forget()
                 #貼り付け
                 self.button_stop_f_ccw.place(
+                    x = 67,
+                    y = 382,
+                    anchor=tk.CENTER
+                )
+            ''''''
+        elif self.flag == 'B':   #ユーザが後方停止画面を操作している時
+            '''後退ボタンの処理'''
+            if laser_msg[3] == True:
+                #ボタン変更
+                self.button_back.place_forget()
+                #貼り付け
+                self.button_back_lock.place(
+                    x = 637,
+                    y = 50,
+                    anchor=tk.CENTER
+                )
+            elif laser_msg[3] == False:
+                #ボタン変更
+                self.button_back_lock.place_forget()
+                
+                #貼り付け
+                self.button_back.place(
+                    x = 637,
+                    y = 50,
+                    anchor=tk.CENTER
+                )
+            ''''''
+            '''cw旋回ボタンの処理'''
+            if laser_msg[1] == True:
+                #ボタン変更
+                self.button_b_cw.place_forget()
+                #貼り付け
+                self.button_b_cw_lock.place(
+                    x = 1185,
+                    y = 382,
+                    anchor=tk.CENTER
+                )
+            elif laser_msg[1] == False:
+                #ボタン変更
+                self.button_b_cw_lock.place_forget()
+                #貼り付け
+                self.button_b_cw.place(
+                    x = 1185,
+                    y = 382,
+                    anchor=tk.CENTER
+                )
+            ''''''
+            '''ccw旋回ボタンの処理'''
+            if laser_msg[2] == True:
+                #ボタン変更
+                self.button_b_ccw.place_forget()
+                #貼り付け
+                self.button_b_ccw_lock.place(
+                    x = 67,
+                    y = 382,
+                    anchor=tk.CENTER
+                )
+                #msg_q.task_done
+            elif laser_msg[2] == False:
+                #ボタン変更
+                self.button_b_ccw_lock.place_forget()
+                #貼り付け
+                self.button_b_ccw.place(
                     x = 67,
                     y = 382,
                     anchor=tk.CENTER

@@ -4,7 +4,7 @@ import socket
 import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk, ImageOps
-import cv2, numpy, time, csv, sys
+import cv2, numpy, time, csv, sys, struct
 import threading, multiprocessing, queue
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 #Set server ip address, port, buffer capacity
@@ -14,9 +14,13 @@ q = queue.Queue()       #受信する画像データをスレッド間で共有�
 msg_q = queue.Queue()   #障害物情報を保持するキュー
 #str_q = queue.Queue()   #画面遷移時に障害物情報を用いるときのキュー
 
+state_q = queue.Queue()
+
 img_flag = 'M_F'   #前方カメラか後方カメラ、どちらを受け取る画像データにするか判断するための変数（F：前方、B：後方、M：Menu、S：停止中）
 
 time_start = 0
+
+state_flag = False   #衝突防止動作によってロボットが停止したかどうかを判断するブール値(False：停止, True：動作中)
 
 class MyApp(tk.Tk):
     
@@ -37,9 +41,11 @@ class MyApp(tk.Tk):
 
         self.flag = 'M_F'   #フレームごとで映像を表示するためのフラグ
 
-        self.str = ['first', 'first', 'first', 'first']   #前回の障害物情報
+        self.str = [False, False, False, False]   #前回の障害物情報用、初期値は周りに障害物なしとみなす
 
         self.arg = False   #画面遷移したかどうか
+
+        self.str_state = False   #衝突防止動作の実行前にロボットが動いていたかを判断する
         
 #-----------------------------menu_frame------------------------------
 
@@ -649,7 +655,7 @@ class MyApp(tk.Tk):
 
         print(buf)
 
-    '''ボタンごとの文字列を文字列送信用の関数controlに送る'''
+    '''ボタンごとの文字列を文字列送信用の関数controlに送る関数たち'''
     #ボタンforward
     def forward(self):
         print("前進")
@@ -670,15 +676,16 @@ class MyApp(tk.Tk):
     def back(self):
         print("後進")
         self.control("x")
-    #ボタン走行開始
-    '''後方走行時 → メニュー画面 → 走行開始 を選んだ場合も後方カメラ映像を映すため'''
+    '''後方走行時 → メニュー画面 → 走行開始 を選んだ場合も後方カメラ映像を映すための関数'''
     def start_running(self):
         print("走行開始")
         self.control("run")
         if self.flag == "M_F":
+            self.arg = True
             self.stop_forward_frame.tkraise()
             self.change_frame_flag("S_F")
         elif self.flag == "M_B":
+            self.arg = True
             self.stop_back_frame.tkraise()
             self.change_frame_flag("S_B")
 
@@ -691,7 +698,6 @@ class MyApp(tk.Tk):
 
     '''画面遷移用の関数'''
     def changePage(self, page):
-        #self.lock_button(True)   #ボタンを遷移後の画面でもロック・アンロックできるように引数はTrue
         self.arg = True
         page.tkraise()   #指定のフレームを最前面に移動
 
@@ -706,7 +712,7 @@ class MyApp(tk.Tk):
     def delete_and_paste(self, laser_msg):
         if self.flag == 'S_F':   #ユーザが前方停止画面を操作している時
             '''前進ボタンの処理'''
-            if laser_msg[0] == 'F_O':
+            if laser_msg[0] == True:
                 #ボタン変更
                 self.button_stop_forward.place_forget()
                 #貼り付け
@@ -716,7 +722,7 @@ class MyApp(tk.Tk):
                     anchor=tk.CENTER
                 )
                 #msg_q.task_done
-            elif laser_msg[0] == 'F_V':
+            elif laser_msg[0] == False:
                 #ボタン変更
                 self.button_stop_forward_lock.place_forget()
                 
@@ -728,7 +734,7 @@ class MyApp(tk.Tk):
                 )
             ''''''
             '''cw旋回ボタンの処理'''
-            if laser_msg[1] == 'CW_O':
+            if laser_msg[1] == True:
                 #ボタン変更
                 self.button_stop_f_cw.place_forget()
                 #貼り付け
@@ -738,7 +744,7 @@ class MyApp(tk.Tk):
                     anchor=tk.CENTER
                 )
                 #msg_q.task_done
-            elif laser_msg[1] == 'CW_V':
+            elif laser_msg[1] == False:
                 #ボタン変更
                 self.button_stop_f_cw_lock.place_forget()
                 #貼り付け
@@ -749,7 +755,7 @@ class MyApp(tk.Tk):
                 )
             ''''''
             '''ccw旋回ボタンの処理'''
-            if laser_msg[2] == 'CCW_O':
+            if laser_msg[2] == True:
                 #ボタン変更
                 self.button_stop_f_ccw.place_forget()
                 #貼り付け
@@ -759,7 +765,7 @@ class MyApp(tk.Tk):
                     anchor=tk.CENTER
                 )
                 #msg_q.task_done
-            elif laser_msg[2] == 'CCW_V':
+            elif laser_msg[2] == False:
                 #ボタン変更
                 self.button_stop_f_ccw_lock.place_forget()
                 #貼り付け
@@ -771,7 +777,7 @@ class MyApp(tk.Tk):
             ''''''
         elif self.flag == 'S_B':   #ユーザが後方停止画面を操作している時
             '''後退ボタンの処理'''
-            if laser_msg[3] == 'B_O':
+            if laser_msg[3] == True:
                 #ボタン変更
                 self.button_stop_back.place_forget()
                 #貼り付け
@@ -780,7 +786,7 @@ class MyApp(tk.Tk):
                     y = 50,
                     anchor=tk.CENTER
                 )
-            elif laser_msg[3] == 'B_V':
+            elif laser_msg[3] == False:
                 #ボタン変更
                 self.button_stop_back_lock.place_forget()
                 
@@ -792,7 +798,7 @@ class MyApp(tk.Tk):
                 )
             ''''''
             '''cw旋回ボタンの処理'''
-            if laser_msg[1] == 'CW_O':
+            if laser_msg[1] == True:
                 #ボタン変更
                 self.button_stop_b_cw.place_forget()
                 #貼り付け
@@ -801,7 +807,7 @@ class MyApp(tk.Tk):
                     y = 382,
                     anchor=tk.CENTER
                 )
-            elif laser_msg[1] == 'CW_V':
+            elif laser_msg[1] == False:
                 #ボタン変更
                 self.button_stop_b_cw_lock.place_forget()
                 #貼り付け
@@ -812,7 +818,7 @@ class MyApp(tk.Tk):
                 )
             ''''''
             '''ccw旋回ボタンの処理'''
-            if laser_msg[2] == 'CCW_O':
+            if laser_msg[2] == True:
                 #ボタン変更
                 self.button_stop_b_ccw.place_forget()
                 #貼り付け
@@ -822,7 +828,7 @@ class MyApp(tk.Tk):
                     anchor=tk.CENTER
                 )
                 #msg_q.task_done
-            elif laser_msg[2] == 'CCW_V':
+            elif laser_msg[2] == False:
                 #ボタン変更
                 self.button_stop_b_ccw_lock.place_forget()
                 #貼り付け
@@ -838,30 +844,42 @@ class MyApp(tk.Tk):
     def lock_button(self):
         global time_start
         #print(arg)
-        if not msg_q.empty():
+        if not msg_q.empty():   #障害物情報に変化があったとき
             laser_msg = msg_q.get(block=True, timeout=True)
-            print(laser_msg)
+            #print(laser_msg)
             self.delete_and_paste(laser_msg)
 
-            time_end = time.time()
-            exe_time = time_end - time_start
-            print("処理時間: {:.10f} seconds".format(exe_time))
+            #time_end = time.time()
+            #exe_time = time_end - time_start
+            #print("処理時間: {:.10f} seconds".format(exe_time))
 
             self.str = laser_msg   #前回の障害物情報を保持
             msg_q.task_done()
 
-        if self.arg == True:
-            #str_laser_msg = str_q.get(block=True, timeout=True)
-            #print(str_laser_msg)
-            #print("前回：", self.str)
-            #print(self.str)
+        if self.arg == True:   #画面遷移が行われたとき
             self.delete_and_paste(self.str)
-
-            #str_q.task_done()
             self.arg = False
         self.after(10, self.lock_button)
+
+    '''衝突防止動作によって停止画面に遷移させるかを判断する関数'''
+    def determine_transition(self):
+        global state_flag
+        #print("関数内："+str(state_flag))
+        if not state_q.empty():
+            state_msg = state_q.get(block=True, timeout=True)
+            if not state_msg:
+                if self.flag == "F":
+                    self.changePage(self.stop_forward_frame)
+                    self.change_frame_flag("S_F")
+                elif self.flag == "B":
+                    self.changePage(self.stop_back_frame)
+                    self.change_frame_flag("S_B")
+            state_q.task_done()
+
+        self.after(10, self.determine_transition)        
+
             
-    '''周辺障害物の情報を受け取る関数'''
+'''周辺障害物の情報を受け取る関数'''
 def receive_laser_data():
     global time_start
     while True:
@@ -870,19 +888,35 @@ def receive_laser_data():
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind((HOST, PORT))
             s.listen(1)  # 接続の待ち受け
-            print('Waiting for connection...')
-            s.settimeout(100)
+            #print('Waiting for connection...')
+            s.settimeout(1000)
             conn, addr = s.accept()  # 接続されるまで待機
-            data = conn.recv(1024)  # データの受信
             time_start = time.time()
-            received_data = data.decode()  #文字列にデコード
-            array = received_data.split('|')
-
+            data = conn.recv(1024)  # データの受信
+            array = struct.unpack('?' * (len(data) // struct.calcsize('?')), data)
+            #print(array)
             msg_q.put(array)
             #str_q.put(array)
             msg_q.join()
 
-
+'''ロボットの状態を受け取る関数'''
+def receive_state_data():
+    global state_flag
+    while True:
+        HOST = '0.0.0.0'
+        PORT = 50010
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind((HOST, PORT))
+            s.listen(1)  # 接続の待ち受け
+            print('waiting state_data...')
+            s.settimeout(1000)
+            conn, addr = s.accept()  # 接続されるまで待機
+            data = conn.recv(1)  # データの受信
+            bool_value = struct.unpack('?', data)[0]
+            #print(bool_value)
+            #state_flag = bool_value
+            state_q.put(bool_value)
+            state_q.join()
 
 def receive_img_data():
     '''ソケット通信で画像データを受信'''
@@ -950,8 +984,11 @@ if __name__ == "__main__":
     thread1.start()
     thread2 = threading.Thread(target=receive_laser_data)
     thread2.start()
+    thread3 = threading.Thread(target=receive_state_data)
+    thread3.start()
     #root.disp_image()
     root.lock_button()
+    root.determine_transition()
     root.mainloop()
 
 
